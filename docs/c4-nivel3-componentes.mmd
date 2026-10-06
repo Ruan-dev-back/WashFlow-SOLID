@@ -1,30 +1,60 @@
 flowchart LR
-    UI[Interface Web Vue.js]
-    DB[(Banco de dados)]
+    UI["Interface Web<br/>frontend/src/"]
+    DB[("Banco de dados")]
+    BCRYPT["bcryptjs"]
+    JWT["jsonwebtoken"]
 
-    subgraph API[Aplicacao WashFlow Node.js e Express]
-        ROTAS[Rotas e autenticacao]
-        CTRL[Controllers]
-        ENTRADA[AtendimentoService]
-        FILA[FilaService]
-        CAD[CadastroService]
-        AUTH[AuthService]
-        REGRAS[Regras de dominio: fila, transicoes e placa]
-        REPOS[Repositories Sequelize]
-        ROTAS --> CTRL
-        CTRL --> ENTRADA
-        CTRL --> FILA
-        CTRL --> CAD
-        CTRL --> AUTH
-        ENTRADA --> FILA
-        ENTRADA --> REGRAS
-        FILA --> REGRAS
-        CAD --> REGRAS
-        ENTRADA --> REPOS
-        FILA --> REPOS
-        CAD --> REPOS
-        AUTH --> REPOS
+    subgraph API["Aplicacao WashFlow - backend/src/"]
+        ROOT["Composition Root<br/>container.js"]
+        ROUTES["Rotas HTTP<br/>routes/*.js"]
+        VALIDATORS["Validacao de entrada<br/>validators/*.js e middlewares/validar.js"]
+        CONTROLLERS["Controllers<br/>controllers/*.js"]
+        AUTH["AuthService<br/>services/authService.js"]
+        ENTRADA["AtendimentoService<br/>services/atendimentoService.js"]
+        FILA["FilaService<br/>services/filaService.js"]
+        CAD["ClienteService, VeiculoService, ServicoService<br/>services/{cliente,veiculo,servico}Service.js"]
+        PORTS["Contratos pequenos<br/>ports/*.js"]
+        DOMAIN["Regras puras<br/>domain/{fila,fluxoStatus,placa,appError}.js"]
+        REPOS["Adapters de persistencia<br/>repositories/*.js"]
+        SECURITY["Adapters de seguranca<br/>infrastructure/security/*.js"]
+        MODELS["Modelos Sequelize<br/>models/*.js"]
+        AUTHMW["Middleware de autenticacao<br/>middlewares/auth.js"]
+        ERRORS["Tratamento de erros HTTP<br/>middlewares/errorHandler.js"]
+
+        ROUTES --> VALIDATORS
+        ROUTES --> CONTROLLERS
+        ROUTES --> AUTHMW
+        ROUTES -.->|erros| ERRORS
+        VALIDATORS --> DOMAIN
+        CONTROLLERS --> AUTH
+        CONTROLLERS --> ENTRADA
+        CONTROLLERS --> FILA
+        CONTROLLERS --> CAD
+        AUTH --> PORTS
+        ENTRADA --> PORTS
+        FILA --> PORTS
+        CAD --> PORTS
+        AUTHMW --> PORTS
+        AUTH --> DOMAIN
+        ENTRADA --> DOMAIN
+        FILA --> DOMAIN
+        CAD --> DOMAIN
+        AUTHMW --> DOMAIN
+        REPOS -.->|implementam| PORTS
+        SECURITY -.->|implementam| PORTS
+        REPOS --> MODELS
+        ROOT -.->|injeta| CONTROLLERS
+        ROOT -.->|injeta| AUTH
+        ROOT -.->|injeta| ENTRADA
+        ROOT -.->|injeta| FILA
+        ROOT -.->|injeta| CAD
+        ROOT -.->|injeta| AUTHMW
+        ROOT -.->|configura| REPOS
+        ROOT -.->|configura| SECURITY
+        ROOT -.->|escolhe politica| DOMAIN
     end
 
-    UI -->|HTTP e JSON| ROTAS
-    REPOS -->|consultas e gravacoes| DB
+    UI -->|HTTP e JSON| ROUTES
+    MODELS --> DB
+    SECURITY --> BCRYPT
+    SECURITY --> JWT

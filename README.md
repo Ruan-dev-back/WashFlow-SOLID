@@ -111,24 +111,29 @@ A Interface Web faz requisições HTTP/JSON à Aplicação WashFlow, que lê e g
 
 Decomposição do container **Aplicação WashFlow** nos agrupamentos de código que o formam.
 
-![C4 Nível 3 - Diagrama de Componentes](docs/c4-nivel3-componentes.png)
+![C4 Nível 3 - Componentes após refatoração SOLID](docs/c4-nivel3-componentes-atual.svg)
 
-[Fonte Mermaid atualizada dos componentes](docs/c4-nivel3-componentes.mmd). A imagem registra a visão original da equipe; a fonte explicita as regras de domínio extraídas nesta refatoração. A seta da imagem para WhatsApp/SMS representa trabalho futuro.
+[Fonte Mermaid dos componentes atuais](docs/c4-nivel3-componentes.mmd). O [diagrama anterior da equipe](docs/c4-nivel3-componentes.png) foi preservado como registro histórico; sua seta para WhatsApp/SMS representa trabalho futuro. A versão atual mostra serviços ligados a contratos e adaptadores concretos montados em `backend/src/container.js`.
 
-| Componente | Tecnologia | Responsabilidade |
+| Componente | Módulo/pacote | Responsabilidade |
 |---|---|---|
-| `AuthController` | Express Router | Ponto de entrada REST da autenticação |
-| `AtendimentoController` | Express Router | Ponto de entrada REST do registro de entrada de veículos |
-| `FilaController` | Express Router | Ponto de entrada REST da consulta da fila e do avanço de status |
-| `CadastroController` | Express Router | Ponto de entrada REST dos cadastros de clientes, veículos e serviços |
-| `AuthService` | Módulo de negócio | Valida credenciais, compara o hash BCrypt e emite o token JWT |
-| `AtendimentoService` | Módulo de negócio | Coordena consulta ou cadastro do veículo, criação do atendimento e retorno da posição e previsão |
-| `FilaService` | Módulo de negócio | Consulta a fila e persiste o avanço de status |
-| `CadastroService` | Módulo de negócio | Regras dos cadastros de apoio |
-| `domain/fila`, `domain/fluxoStatus`, `domain/placa` | Regras de domínio | Cálculo puro da previsão, definição das transições e normalização de placa |
-| `UsuarioRepository`, `ClienteRepository`, `VeiculoRepository`, `ServicoRepository`, `AtendimentoRepository` | Sequelize ORM | Única via de acesso ao banco de dados |
-| `AuthMiddleware` | Middleware Express | Valida o token JWT e o perfil do usuário em toda rota protegida |
-| `ErrorHandler` | Middleware Express | Destino único de todos os erros da API |
+| Rotas HTTP | `routes/*.js` | Mapeiam URL para validação, autenticação e controller |
+| `AuthController` | `controllers/authController.js` | Ponto de entrada REST da autenticação |
+| `AtendimentoController` | `controllers/atendimentoController.js` | Ponto de entrada REST do registro de entrada de veículos |
+| `FilaController` | `controllers/filaController.js` | Ponto de entrada REST da consulta da fila e do avanço de status |
+| `CadastroController` | `controllers/cadastroController.js` | Ponto de entrada REST dos cadastros de clientes, veículos e serviços |
+| Validadores de entrada | `validators/*.js` e `middlewares/validar.js` | Validam e normalizam dados antes dos casos de uso |
+| `AuthService` | `services/authService.js` | Autentica por contratos de usuário, comparação de senha e emissão de token |
+| `AtendimentoService` | `services/atendimentoService.js` | Coordena consulta ou cadastro do veículo, criação do atendimento e retorno da posição e previsão |
+| `FilaService` | `services/filaService.js` | Consulta a fila e persiste o avanço de status |
+| `ClienteService`, `VeiculoService`, `ServicoService` | `services/{cliente,veiculo,servico}Service.js` | Regras separadas para cada cadastro |
+| `domain/fila`, `domain/fluxoStatus`, `domain/placa`, `domain/appError` | Regras de domínio | Cálculo puro, transições configuráveis, normalização e erro de negócio, sem framework ou banco |
+| Contratos | `ports/*.js` | Capacidades pequenas documentadas por JSDoc e recebidas nas fábricas de serviços |
+| Repositórios Sequelize | `repositories/*.js` | Adaptadores de persistência que satisfazem os contratos usados pelos serviços |
+| Segurança | `infrastructure/security/*.js` | Adaptadores BCrypt e JWT; serviços não importam essas bibliotecas |
+| Composition Root | `container.js` | Monta adaptadores, serviços, controllers e autenticação HTTP |
+| `AuthMiddleware` | `middlewares/auth.js` | Valida token por contrato de verificação e perfil em toda rota protegida |
+| `ErrorHandler` | `middlewares/errorHandler.js` | Destino único de todos os erros da API |
 
 ### 3.4. Limite da documentação C4
 
@@ -140,9 +145,9 @@ Os três diagramas acima documentam contexto, containers e componentes. Os diagr
 
 ### 4.1. Diagrama de Classes
 
-Representação estrutural das entidades e dos serviços. A imagem original da equipe é mantida abaixo; a [fonte Mermaid do recorte refatorado](docs/diagrama-classes.mmd) mostra as dependências e regras atuais do fluxo de entrada e fila.
+Representação estrutural das entidades e dos serviços. A [fonte Mermaid atualizada](docs/diagrama-classes.mmd) mostra serviços, contratos JSDoc e adaptadores após a refatoração. O [diagrama de classes anterior](docs/diagrama-classes.png) permanece preservado. Os contratos são tipos estruturais documentados, não classes abstratas em tempo de execução.
 
-![Diagrama de Classes](docs/diagrama-classes.png)
+![Diagrama de classes após refatoração SOLID](docs/diagrama-classes-atual.svg)
 
 | Classe | Camada | Responsabilidade |
 |---|---|---|
@@ -154,9 +159,11 @@ Representação estrutural das entidades e dos serviços. A imagem original da e
 | `StatusAtendimento` | Enumeração | `AGUARDANDO`, `EM_LAVAGEM`, `SECAGEM`, `FINALIZADO` |
 | `AtendimentoService` | Negócio | Registra a entrada reaproveitando cliente e veículo já cadastrados e impede duplicidade na fila |
 | `FilaService` | Negócio | Consulta os atendimentos em andamento e persiste o avanço de status |
+| `ClienteService`, `VeiculoService`, `ServicoService` | Negócio | Tratam separadamente cada cadastro de apoio |
 | `domain/fila` e `domain/fluxoStatus` | Domínio | Calculam a previsão e definem a próxima transição sem acessar HTTP ou banco |
-| `AuthService` | Negócio | Autentica o usuário e emite o token JWT |
-| `*Repository` | Persistência | Isolam o acesso ao banco; nenhuma outra camada executa consultas |
+| `AuthService` | Negócio | Autentica por capacidades injetadas, sem conhecer BCrypt, JWT ou Sequelize |
+| `ports/*` | Contratos | Especificam apenas os métodos exigidos por cada caso de uso |
+| `*Repository` | Persistência | Implementam acesso ao banco por trás dos contratos |
 | `*Controller` | Apresentação | Traduzem HTTP em chamadas de serviço e serviço em resposta HTTP |
 
 > **A fila não é uma classe persistida.** Ela é a consulta dos `Atendimento` cujo status ainda não é `FINALIZADO`, ordenados pela hora de entrada. Modelar a fila como tabela exigiria manter posições sincronizadas a cada mudança; derivá-la dos atendimentos elimina essa fonte de inconsistência.
@@ -180,10 +187,12 @@ O back-end do WashFlow adota **dois padrões complementares**: **Monolítico em 
 O back-end — rotas HTTP, regras de negócio e acesso ao banco — é executado no container `Aplicação WashFlow`. Seus arquivos são organizados por responsabilidade:
 
 ```
-Rotas → Controllers → Services → Repositories → Models → Banco de Dados
-                           ↓
+Rotas → Controllers → Services → Ports ← Adapters → Models → Banco de Dados
+                           ↓                 ↘ BCrypt / JWT
                      Regras de domínio
 ```
+
+`backend/src/container.js` monta as implementações concretas e injeta cada dependência no ponto de entrada. As setas para `Ports` representam contratos usados em código; a execução chama os adaptadores recebidos pelo container.
 
 **Por que esse padrão:**
 
@@ -193,7 +202,7 @@ Rotas → Controllers → Services → Repositories → Models → Banco de Dado
 
 3. **É o padrão que melhor atende os RNF priorizados ao menor custo de complexidade.** A Disponibilidade (RNF01) de 99,9% em horário comercial é alcançável com instâncias redundantes de um monólito, sem orquestração de serviços. O desempenho de 500 ms no p95 (RNF02) é mais fácil de garantir sem saltos de rede entre serviços. Como afirma o material da disciplina: *"a melhor arquitetura não é a mais moderna ou a mais complexa, mas sim a que melhor resolve os requisitos de negócio com o menor custo de complexidade possível."*
 
-4. **A separação em camadas preserva a testabilidade e a manutenibilidade.** O cálculo da fila vive em `backend/src/domain/fila.js`, sem dependência de HTTP ou banco. `FilaService` coordena a consulta ao repositório e aplica essa regra; `AtendimentoService` coordena os repositórios necessários e consulta a fila depois de criar a entrada.
+4. **A separação em camadas preserva a testabilidade e a manutenibilidade.** O cálculo da fila vive em `backend/src/domain/fila.js`, sem dependência de HTTP ou banco. `FilaService` usa o contrato de atendimentos e aplica essa regra; `AtendimentoService` recebe contratos específicos para coordenar a entrada.
 
 **Trade-off aceito:** o back-end é reimplantado como uma unidade a cada alteração, e um defeito grave em um módulo pode derrubar a API inteira. A separação de responsabilidades e os testes reduzem esse risco, mas não o eliminam.
 
@@ -216,11 +225,15 @@ O MVC organiza a camada de apresentação, distribuída entre dois containers do
 | Camada | Pasta | Regra |
 |---|---|---|
 | Apresentação (View) | `frontend/src/views/` | Nunca chama a API diretamente — usa `frontend/src/services/` |
-| Rotas | `backend/src/routes/` | Mapeia URL para controller e declara a validação de entrada |
+| Rotas | `backend/src/routes/` | Mapeia URL para validator, middleware e controller |
+| Validação HTTP | `backend/src/validators/` e `backend/src/middlewares/validar.js` | Declara e aplica regras de entrada |
 | Apresentação (Controller) | `backend/src/controllers/` | Nenhuma regra de negócio |
 | Negócio | `backend/src/services/` | Coordena casos de uso e aplica regras do domínio; não conhece HTTP |
 | Domínio | `backend/src/domain/` | Regras puras de fila, transição de status e placa; não acessa banco ou HTTP |
+| Contratos | `backend/src/ports/` | Define capacidades pequenas em JSDoc, sem classes abstratas artificiais |
 | Persistência | `backend/src/repositories/` | Única camada que consulta o banco |
+| Adaptadores de segurança | `backend/src/infrastructure/security/` | Encapsula BCrypt e JWT |
+| Composição | `backend/src/container.js` | Configura implementações concretas e injeta serviços, controllers e middleware |
 | Entidades (Model) | `backend/src/models/` | Entidades e associações |
 | Transferência | `backend/src/dtos/` | Impede que dados sensíveis (ex.: hash de senha) saiam da API |
 
@@ -228,13 +241,13 @@ O MVC organiza a camada de apresentação, distribuída entre dois containers do
 
 | Princípio | Decisão no código |
 |---|---|
-| Responsabilidade única | `AtendimentoService` coordena a entrada; `domain/fila` calcula previsões; `domain/fluxoStatus` define transições; os repositories fazem persistência. |
-| Aberto/fechado | A sequência de transições fica em `domain/fluxoStatus`; a orquestração de `FilaService` não contém condicionais por etapa. |
-| Substituição de Liskov | As fábricas de serviços recebem colaboradores pelos métodos que usam; implementações alternativas com o mesmo contrato podem substituir os repositories em testes. |
-| Segregação de interfaces | `criarAtendimentoService` recebe portas separadas para clientes, veículos, serviços, atendimentos e fila; `criarFilaService` recebe apenas a porta de atendimentos e um relógio. |
-| Inversão de dependência | As regras centrais são instanciadas por fábricas com dependências injetadas; a composição padrão conecta os repositories Sequelize na borda. |
+| Responsabilidade única | `ClienteService`, `VeiculoService` e `ServicoService` substituem o antigo `CadastroService`; fila, autenticação e entrada têm casos de uso separados. |
+| Aberto/fechado | `criarFluxoStatus` aceita outra política; `FilaService` recebe essa política e não precisa mudar para testar outra transição. |
+| Substituição de Liskov | Testes executam `AtendimentoService`, `AuthService` e `FilaService` com colaboradores substitutos que respeitam os mesmos contratos. |
+| Segregação de interfaces | `ports/*.js` documenta capacidades por caso de uso; o autenticador exige só comparação de senha e emissão de token. |
+| Inversão de dependência | `container.js` monta repositórios Sequelize, BCrypt e JWT; serviços de alto nível recebem contratos e não importam implementações concretas. |
 
-Em JavaScript, esses contratos são estruturais e não usam interfaces formais. A substituição pressupõe que cada colaborador implemente os métodos e retornos esperados; os testes exercitam um repositório substituto e o fluxo completo com SQLite em memória.
+Em JavaScript, esses contratos são estruturais e não usam classes abstratas. A substituição pressupõe os métodos e retornos documentados; os testes exercitam fakes e o fluxo completo com SQLite em memória. A integração de notificações ainda não existe. O diagnóstico, as evidências e o checklist dos 13 critérios estão em [docs/solid-refactor.md](docs/solid-refactor.md).
 
 ---
 
@@ -331,7 +344,7 @@ Esta entrega corresponde a aproximadamente **35% do projeto**. O recorte prioriz
 
 ### 7.4. O que a entrega demonstra sobre a arquitetura
 
-O fluxo implementado atravessa **todas as camadas** do padrão declarado na seção 5: uma requisição de entrada de veículo passa por rota → validação → middleware de autenticação → controller → service → repository → model → banco. O serviço consulta a fila e acrescenta posição e previsão à resposta. O cálculo em `domain/fila.js` é puro e testável sem HTTP ou Sequelize; `FilaService` consulta os atendimentos em andamento.
+O fluxo implementado atravessa **todas as camadas** do padrão declarado na seção 5: uma requisição de entrada passa por rota → validação → middleware de autenticação → controller → service → contrato injetado → adaptador Sequelize → model → banco. O serviço consulta a fila e acrescenta posição e previsão à resposta. O cálculo em `domain/fila.js` é puro e testável sem HTTP ou Sequelize.
 
 ---
 
@@ -368,15 +381,19 @@ WashFlow/
 ├── docs/                      C4, classes UML e sequência UML (imagem original e Mermaid)
 ├── backend/                   API - Node.js / Express
 │   ├── src/
-│       ├── config/            Conexão com o banco, constantes e carga inicial
-│       ├── routes/            Camada de rotas
-│       ├── controllers/       Camada de apresentação
-│       ├── services/          Camada de negócio
-│       ├── domain/            Regras puras de fila, status e placa
-│       ├── repositories/      Camada de persistência
-│       ├── models/            Entidades de domínio
-│       ├── dtos/              Objetos de transferência
-│       └── middlewares/       Autenticação, validação e tratamento de erros
+│   │   ├── container.js       Composition Root
+│   │   ├── config/            Conexão com o banco, constantes e carga inicial
+│   │   ├── routes/            Camada de rotas
+│   │   ├── validators/        Validação de entrada HTTP
+│   │   ├── controllers/       Camada de apresentação
+│   │   ├── services/          Casos de uso, incluindo serviços separados de cadastro
+│   │   ├── domain/            Regras puras de fila, status e placa
+│   │   ├── ports/             Contratos pequenos em JSDoc
+│   │   ├── infrastructure/    Adaptadores BCrypt e JWT
+│   │   ├── repositories/      Camada de persistência
+│   │   ├── models/            Entidades de domínio
+│   │   ├── dtos/              Objetos de transferência
+│   │   └── middlewares/       Autenticação, validação e tratamento de erros
 │   └── test/                  Testes automatizados do fluxo principal
 └── frontend/                  Interface Web - Vue.js
     └── src/
@@ -405,6 +422,6 @@ npm run dev
 
 O banco de destino documentado é o **PostgreSQL**. Para desenvolvimento local, `DB_DIALECT=sqlite` no `.env` permite rodar o projeto sem instalar o Postgres; a aplicação não percebe a diferença. Na primeira execução o sistema cria as tabelas e a carga inicial.
 
-**Verificação local:** em `backend/`, execute `npm test` (SQLite em memória); em `frontend/`, execute `npm run build`. Os testes cobrem a entrada de veículo novo e existente, a posição e a previsão, a prevenção de duplicidade e o avanço de status.
+**Verificação local:** em `backend/`, execute `npm test` (SQLite em memória e fakes); em `frontend/`, execute `npm run build`. Os testes cobrem entrada, posição e previsão, cadastros HTTP, autenticação por adaptadores substitutos e transições de status.
 
 **Usuários de demonstração:** `recepcao` / `recepcao123` (Funcionário) e `gerente` / `gerente123` (Gerente).

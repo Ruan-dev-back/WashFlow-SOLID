@@ -1,7 +1,6 @@
 classDiagram
     class Usuario {
       id
-      nome
       login
       senhaHash
       perfil
@@ -15,12 +14,10 @@ classDiagram
       id
       placa
       modelo
-      cor
     }
     class Servico {
       id
       nome
-      preco
       duracaoEstimadaMinutos
     }
     class Atendimento {
@@ -30,6 +27,10 @@ classDiagram
       horaInicio
       horaFim
     }
+
+    class AuthService {
+      +autenticar(login, senha)
+    }
     class AtendimentoService {
       +registrarEntrada(dados, usuarioId)
     }
@@ -37,39 +38,125 @@ classDiagram
       +consultarFila()
       +avancarStatus(id)
     }
-    class RegrasFila {
-      +calcularFila(atendimentos, agora)
+    class ClienteService {
+      +listarClientes()
+      +criarCliente(dados)
     }
-    class FluxoStatus {
-      +proximaTransicao(status)
+    class VeiculoService {
+      +listarVeiculos()
+      +criarVeiculo(dados)
     }
-    class AtendimentoRepository {
-      +listarEmAndamento()
-      +buscarPorId(id)
-      +criar(dados)
-      +salvar(atendimento)
+    class ServicoService {
+      +listarServicos()
+      +criarServico(dados)
     }
-    class ClienteRepository {
+
+    class UsuarioRepositoryPort {
+      +buscarPorLogin(login)
+    }
+    class ClienteEntradaPort {
       +buscarPorTelefone(telefone)
       +criar(dados)
     }
-    class VeiculoRepository {
+    class ClienteCadastroPort {
+      +listar()
+      +buscarPorTelefone(telefone)
+      +criar(dados)
+    }
+    class ClienteConsultaPort {
+      +buscarPorId(id)
+    }
+    class VeiculoEntradaPort {
       +buscarPorPlaca(placa)
       +criar(dados)
     }
-    class ServicoRepository {
+    class VeiculoCadastroPort {
+      +listar()
+      +buscarPorPlaca(placa)
+      +criar(dados)
+    }
+    class ServicoEntradaPort {
       +buscarPorId(id)
+    }
+    class ServicoCadastroPort {
+      +listar()
+      +buscarPorNome(nome)
+      +criar(dados)
+    }
+    class AtendimentoEntradaPort {
+      +buscarPorId(id)
+      +buscarEmAndamentoPorVeiculo(id)
+      +criar(dados)
+    }
+    class AtendimentoFilaPort {
+      +listarEmAndamento()
+      +buscarPorId(id)
+      +salvar(atendimento)
+    }
+    class ComparadorSenhaPort {
+      +comparar(senha, hash)
+    }
+    class EmissorTokenPort {
+      +emitir(payload)
+    }
+    class VerificadorTokenPort {
+      +verificar(token)
+    }
+    class GeradorHashSenhaPort {
+      +gerarHash(senha)
+    }
+    class FluxoStatusPort {
+      +proximaTransicao(status)
+    }
+    class FilaConsultaPort {
+      +consultarFila()
+    }
+
+    class RepositoriesSequelize
+    class BcryptPasswordHasher
+    class JwtTokenProvider
+    class Container
+    class RegrasFila {
+      +calcularFila(atendimentos, agora)
     }
 
     Cliente "1" --> "0..*" Veiculo
     Veiculo "1" --> "0..*" Atendimento
     Servico "1" --> "0..*" Atendimento
     Usuario "1" --> "0..*" Atendimento
-    AtendimentoService ..> AtendimentoRepository
-    AtendimentoService ..> ClienteRepository
-    AtendimentoService ..> VeiculoRepository
-    AtendimentoService ..> ServicoRepository
-    AtendimentoService ..> FilaService
-    FilaService ..> AtendimentoRepository
+
+    AuthService ..> UsuarioRepositoryPort
+    AuthService ..> ComparadorSenhaPort
+    AuthService ..> EmissorTokenPort
+    AtendimentoService ..> ClienteEntradaPort
+    AtendimentoService ..> VeiculoEntradaPort
+    AtendimentoService ..> ServicoEntradaPort
+    AtendimentoService ..> AtendimentoEntradaPort
+    AtendimentoService ..> FilaConsultaPort
+    FilaService ..> AtendimentoFilaPort
+    FilaService ..> FluxoStatusPort
     FilaService ..> RegrasFila
-    FilaService ..> FluxoStatus
+    ClienteService ..> ClienteCadastroPort
+    VeiculoService ..> ClienteConsultaPort
+    VeiculoService ..> VeiculoCadastroPort
+    ServicoService ..> ServicoCadastroPort
+    RepositoriesSequelize ..> UsuarioRepositoryPort
+    RepositoriesSequelize ..> ClienteEntradaPort
+    RepositoriesSequelize ..> ClienteCadastroPort
+    RepositoriesSequelize ..> ClienteConsultaPort
+    RepositoriesSequelize ..> VeiculoEntradaPort
+    RepositoriesSequelize ..> VeiculoCadastroPort
+    RepositoriesSequelize ..> ServicoEntradaPort
+    RepositoriesSequelize ..> ServicoCadastroPort
+    RepositoriesSequelize ..> AtendimentoEntradaPort
+    RepositoriesSequelize ..> AtendimentoFilaPort
+    BcryptPasswordHasher ..> ComparadorSenhaPort
+    BcryptPasswordHasher ..> GeradorHashSenhaPort
+    JwtTokenProvider ..> EmissorTokenPort
+    JwtTokenProvider ..> VerificadorTokenPort
+    Container ..> AuthService
+    Container ..> AtendimentoService
+    Container ..> FilaService
+    Container ..> ClienteService
+    Container ..> VeiculoService
+    Container ..> ServicoService

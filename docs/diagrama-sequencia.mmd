@@ -14,6 +14,7 @@ sequenceDiagram
     Atendente->>UI: Preenche entrada e escolhe servico
     UI->>API: POST /atendimentos
     API->>Entrada: registrarEntrada(dados, usuarioId)
+    Note over Entrada,Veiculos: O container injeta adapters de repository por contratos pequenos
     Entrada->>Veiculos: buscarPorPlaca(placa normalizada)
     Veiculos-->>Entrada: Veiculo existente ou ausente
     Entrada->>Servicos: buscarPorId(servicoId)
