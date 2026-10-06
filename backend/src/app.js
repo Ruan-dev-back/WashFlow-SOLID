@@ -7,7 +7,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const routes = require('./routes');
+const { criarRoutes } = require('./routes');
+const container = require('./container');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
@@ -20,7 +21,7 @@ app.use(
   })
 );
 
-app.use('/api', routes);
+app.use('/api', criarRoutes(container));
 
 app.use((req, res) =>
   res.status(404).json({ sucesso: false, mensagem: 'Rota nao encontrada.', erros: [] })

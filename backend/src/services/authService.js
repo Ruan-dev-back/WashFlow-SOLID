@@ -1,35 +1,38 @@
 /**
  * Camada de Negocio -- autenticacao (RNF04 - Seguranca).
  */
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const usuarioRepository = require('../repositories/usuarioRepository');
-const AppError = require('../middlewares/appError');
+const AppError = require('../domain/appError');
 const { paraUsuarioDTO } = require('../dtos/usuarioDTO');
 
-async function autenticar(login, senha) {
-  const usuario = await usuarioRepository.buscarPorLogin(login);
+/**
+ * @param {{usuarios: import('../ports/usuarioRepositoryPort').UsuarioRepositoryPort,
+ * passwordHasher: import('../ports/passwordHasherPort').ComparadorSenhaPort,
+ * tokenProvider: import('../ports/tokenProviderPort').EmissorTokenPort}} deps
+ */
+function criarAuthService({ usuarios, passwordHasher, tokenProvider }) {
+  async function autenticar(login, senha) {
+    const usuario = await usuarios.buscarPorLogin(login);
 
-  // Mensagem unica para login inexistente e senha errada: responder de
-  // forma diferente revelaria quais logins existem.
-  const credenciaisInvalidas = new AppError('Login ou senha invalidos.', 401);
+    // Nao revela se o login existe.
+    const credenciaisInvalidas = new AppError('Login ou senha invalidos.', 401);
 
-  if (!usuario || !usuario.ativo) {
-    throw credenciaisInvalidas;
+    if (!usuario || !usuario.ativo) {
+      throw credenciaisInvalidas;
+    }
+
+    const senhaConfere = await passwordHasher.comparar(senha, usuario.senhaHash);
+    if (!senhaConfere) {
+      throw credenciaisInvalidas;
+    }
+
+    const token = tokenProvider.emitir({
+      id: usuario.id, login: usuario.login, perfil: usuario.perfil,
+    });
+
+    return { token, usuario: paraUsuarioDTO(usuario) };
   }
 
-  const senhaConfere = await bcrypt.compare(senha, usuario.senhaHash);
-  if (!senhaConfere) {
-    throw credenciaisInvalidas;
-  }
-
-  const token = jwt.sign(
-    { id: usuario.id, login: usuario.login, perfil: usuario.perfil },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-  );
-
-  return { token, usuario: paraUsuarioDTO(usuario) };
+  return { autenticar };
 }
 
-module.exports = { autenticar };
+module.exports = { criarAuthService };

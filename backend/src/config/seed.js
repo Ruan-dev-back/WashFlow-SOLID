@@ -3,7 +3,6 @@
  * fazer login nem dar entrada em nenhum veiculo.
  * Idempotente -- so cria o que ainda nao existe.
  */
-const bcrypt = require('bcryptjs');
 const { Usuario, Servico } = require('../models');
 const { PERFIS } = require('./constants');
 
@@ -18,11 +17,11 @@ const SERVICOS = [
   { nome: 'Polimento', preco: 180.0, duracaoEstimadaMinutos: 120 },
 ];
 
-async function executarSeed() {
+async function executarSeed({ passwordHasher }) {
   for (const { senha, ...dados } of USUARIOS) {
     const existente = await Usuario.findOne({ where: { login: dados.login } });
     if (!existente) {
-      const senhaHash = await bcrypt.hash(senha, 10);
+      const senhaHash = await passwordHasher.gerarHash(senha);
       await Usuario.create({ ...dados, senhaHash });
     }
   }

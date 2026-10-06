@@ -5,12 +5,7 @@
  * telefone e tipo de lavagem, o recepcionista coloca o veiculo no patio
  * em uma unica requisicao (RNF05 - Usabilidade).
  */
-const clienteRepository = require('../repositories/clienteRepository');
-const veiculoRepository = require('../repositories/veiculoRepository');
-const servicoRepository = require('../repositories/servicoRepository');
-const atendimentoRepository = require('../repositories/atendimentoRepository');
-const filaService = require('./filaService');
-const AppError = require('../middlewares/appError');
+const AppError = require('../domain/appError');
 const { normalizarPlaca } = require('../domain/placa');
 
 /**
@@ -18,6 +13,13 @@ const { normalizarPlaca } = require('../domain/placa');
  *
  * Cliente e veiculo sao reaproveitados quando ja existem: no balcao, o
  * recepcionista nao deve precisar saber se aquele carro ja e cadastrado.
+ */
+/**
+ * @param {{clientes: import('../ports/clienteRepositoryPort').ClienteEntradaPort,
+ * veiculos: import('../ports/veiculoRepositoryPort').VeiculoEntradaPort,
+ * servicos: import('../ports/servicoRepositoryPort').ServicoEntradaPort,
+ * atendimentos: import('../ports/atendimentoRepositoryPort').AtendimentoEntradaPort,
+ * fila: import('../ports/filaConsultaPort').FilaConsultaPort}} deps
  */
 function criarAtendimentoService({ clientes, veiculos, servicos, atendimentos, fila }) {
   async function registrarEntrada(
@@ -72,12 +74,4 @@ function criarAtendimentoService({ clientes, veiculos, servicos, atendimentos, f
   return { registrarEntrada };
 }
 
-const { registrarEntrada } = criarAtendimentoService({
-  clientes: clienteRepository,
-  veiculos: veiculoRepository,
-  servicos: servicoRepository,
-  atendimentos: atendimentoRepository,
-  fila: filaService,
-});
-
-module.exports = { criarAtendimentoService, registrarEntrada };
+module.exports = { criarAtendimentoService };

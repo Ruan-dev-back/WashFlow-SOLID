@@ -5,8 +5,9 @@ process.env.DB_DIALECT = 'sqlite';
 process.env.DB_STORAGE = ':memory:';
 
 const { sequelize, Usuario, Cliente, Veiculo, Servico } = require('../src/models');
-const atendimentoService = require('../src/services/atendimentoService');
-const filaService = require('../src/services/filaService');
+const { services } = require('../src/container');
+const atendimentoService = services.atendimento;
+const filaService = services.fila;
 
 test('consulta ou cadastra veiculo, cria atendimento e informa fila sem duplicar cadastro', async () => {
   await sequelize.sync({ force: true });

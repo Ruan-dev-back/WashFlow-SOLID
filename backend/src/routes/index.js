@@ -2,18 +2,25 @@
  * Camada de Rotas -- agregador.
  */
 const express = require('express');
-const authRoutes = require('./authRoutes');
-const cadastroRoutes = require('./cadastroRoutes');
-const atendimentoRoutes = require('./atendimentoRoutes');
+const { criarAuthRoutes } = require('./authRoutes');
+const { criarCadastroRoutes } = require('./cadastroRoutes');
+const { criarAtendimentoRoutes } = require('./atendimentoRoutes');
 
-const router = express.Router();
+function criarRoutes({ controllers, autenticar }) {
+  const router = express.Router();
 
-router.get('/', (req, res) =>
-  res.json({ sucesso: true, mensagem: 'API WashFlow no ar.' })
-);
+  router.get('/', (req, res) =>
+    res.json({ sucesso: true, mensagem: 'API WashFlow no ar.' })
+  );
 
-router.use(authRoutes);
-router.use(cadastroRoutes);
-router.use(atendimentoRoutes);
+  router.use(criarAuthRoutes(controllers.auth));
+  router.use(criarCadastroRoutes({ cadastroController: controllers.cadastro, autenticar }));
+  router.use(criarAtendimentoRoutes({
+    atendimentoController: controllers.atendimento,
+    filaController: controllers.fila,
+    autenticar,
+  }));
+  return router;
+}
 
-module.exports = router;
+module.exports = { criarRoutes };

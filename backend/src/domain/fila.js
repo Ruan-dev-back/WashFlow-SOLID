@@ -1,5 +1,3 @@
-const { paraItemFilaDTO } = require('../dtos/filaDTO');
-
 function minutosRestantes(atendimento, agora) {
   const duracao = atendimento.servico.duracaoEstimadaMinutos;
   if (!atendimento.horaInicio) return duracao;
@@ -13,7 +11,11 @@ function calcularFila(atendimentos, agora) {
   let acumulado = 0;
   return atendimentos.map((atendimento, indice) => {
     acumulado += minutosRestantes(atendimento, agora);
-    return paraItemFilaDTO(atendimento, indice + 1, acumulado);
+    return {
+      atendimento,
+      posicao: indice + 1,
+      tempoEsperaEstimadoMinutos: acumulado,
+    };
   });
 }
 

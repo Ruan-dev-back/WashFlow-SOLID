@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 
 const { calcularFila } = require('../src/domain/fila');
 const { normalizarPlaca } = require('../src/domain/placa');
-const { proximaTransicao } = require('../src/domain/fluxoStatus');
+const { fluxoStatusPadrao, criarFluxoStatus } = require('../src/domain/fluxoStatus');
 const { criarFilaService } = require('../src/services/filaService');
 
 function atendimento(id, duracao, horaInicio = null) {
@@ -27,10 +27,10 @@ test('calcula posicao e previsao acumulada descontando apenas o tempo em curso',
 
 test('normaliza placa e define as transicoes sem acessar persistencia', () => {
   assert.equal(normalizarPlaca('abc-1d23'), 'ABC1D23');
-  assert.deepEqual(proximaTransicao('AGUARDANDO'), {
+  assert.deepEqual(fluxoStatusPadrao.proximaTransicao('AGUARDANDO'), {
     status: 'EM_LAVAGEM', horario: 'horaInicio',
   });
-  assert.equal(proximaTransicao('FINALIZADO'), null);
+  assert.equal(fluxoStatusPadrao.proximaTransicao('FINALIZADO'), null);
 });
 
 test('fila aceita repositório substituto e relógio controlado', async () => {
@@ -39,6 +39,7 @@ test('fila aceita repositório substituto e relógio controlado', async () => {
   const chamadas = [];
   const servico = criarFilaService({
     relogio: () => agora,
+    fluxoStatus: fluxoStatusPadrao,
     atendimentos: {
       listarEmAndamento: async () => [registro],
       buscarPorId: async () => registro,
@@ -51,4 +52,18 @@ test('fila aceita repositório substituto e relógio controlado', async () => {
   assert.equal(atualizado.status, 'EM_LAVAGEM');
   assert.equal(atualizado.horaInicio, agora);
   assert.deepEqual(chamadas, ['EM_LAVAGEM']);
+});
+
+test('nova politica de status pode ser injetada sem alterar FilaService', async () => {
+  const registro = atendimento(1, 30);
+  const fluxoStatus = criarFluxoStatus([{ de: 'AGUARDANDO', para: 'INSPECAO' }]);
+  const servico = criarFilaService({
+    fluxoStatus,
+    atendimentos: {
+      listarEmAndamento: async () => [registro],
+      buscarPorId: async () => registro,
+      salvar: async () => registro,
+    },
+  });
+  assert.equal((await servico.avancarStatus(1)).status, 'INSPECAO');
 });

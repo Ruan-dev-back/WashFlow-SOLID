@@ -21,9 +21,20 @@ test('POST /api/atendimentos devolve os dados anteriores mais posicao e previsao
       nome: 'Simples', preco: 40, duracaoEstimadaMinutos: 30,
     });
     const token = jwt.sign({ id: usuario.id, perfil: usuario.perfil }, process.env.JWT_SECRET);
-    const resposta = await fetch(`http://127.0.0.1:${server.address().port}/api/atendimentos`, {
+    const url = `http://127.0.0.1:${server.address().port}/api/atendimentos`;
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const invalida = await fetch(url, {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        placa: 'invalida', modelo: 'Gol', nomeCliente: 'Ana',
+        telefone: '11999999999', servicoId: servico.id,
+      }),
+    });
+    assert.equal(invalida.status, 400);
+
+    const resposta = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers,
       body: JSON.stringify({
         placa: 'abc-1234', modelo: 'Gol', cor: 'Branco',
         nomeCliente: 'Ana', telefone: '11999999999', servicoId: servico.id,

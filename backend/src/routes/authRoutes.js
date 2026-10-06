@@ -1,22 +1,20 @@
 /**
- * Camada de Rotas -- mapeia URL para controller e declara a validacao de entrada.
+ * Camada de Rotas -- apenas mapeia URL para validacao e controller.
  */
 const express = require('express');
-const { body } = require('express-validator');
-const authController = require('../controllers/authController');
 const asyncHandler = require('../middlewares/asyncHandler');
-const validar = require('../middlewares/validar');
+const { validarLogin } = require('../validators/authValidators');
 
-const router = express.Router();
+function criarAuthRoutes(authController) {
+  const router = express.Router();
 
-router.post(
-  '/auth/login',
-  [
-    body('login').notEmpty().withMessage('Informe o login.').trim(),
-    body('senha').notEmpty().withMessage('Informe a senha.'),
-    validar,
-  ],
-  asyncHandler(authController.login)
-);
+  router.post(
+    '/auth/login',
+    validarLogin,
+    asyncHandler(authController.login)
+  );
 
-module.exports = router;
+  return router;
+}
+
+module.exports = { criarAuthRoutes };

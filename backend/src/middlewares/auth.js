@@ -5,10 +5,10 @@
  * perfil de Gerente. Sem isso, dados pessoais de clientes (nome, telefone,
  * placa) ficariam expostos a qualquer chamada.
  */
-const jwt = require('jsonwebtoken');
 const AppError = require('./appError');
 
-const autenticar = (req, res, next) => {
+/** @param {{tokenProvider: import('../ports/tokenProviderPort').VerificadorTokenPort}} deps */
+const criarAutenticar = ({ tokenProvider }) => (req, res, next) => {
   const cabecalho = req.headers.authorization || '';
 
   if (!cabecalho.startsWith('Bearer ')) {
@@ -17,7 +17,7 @@ const autenticar = (req, res, next) => {
 
   try {
     const token = cabecalho.slice(7);
-    req.usuario = jwt.verify(token, process.env.JWT_SECRET);
+    req.usuario = tokenProvider.verificar(token);
     return next();
   } catch {
     return next(new AppError('Token invalido ou expirado.', 401));
@@ -34,4 +34,4 @@ const autorizar =
     return next();
   };
 
-module.exports = { autenticar, autorizar };
+module.exports = { criarAutenticar, autorizar };

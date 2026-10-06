@@ -4,6 +4,7 @@
 const app = require('./app');
 const { sequelize } = require('./models');
 const { executarSeed } = require('./config/seed');
+const { passwordHasher } = require('./container');
 
 const PORT = process.env.PORT || 3000;
 
@@ -11,7 +12,7 @@ async function iniciar() {
   try {
     await sequelize.authenticate();
     await sequelize.sync({ alter: true });
-    await executarSeed();
+    await executarSeed({ passwordHasher });
 
     app.listen(PORT, () =>
       console.log(`API WashFlow ouvindo em http://localhost:${PORT}/api`)
