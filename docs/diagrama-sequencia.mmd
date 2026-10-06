@@ -1,0 +1,42 @@
+sequenceDiagram
+    actor Cliente
+    actor Atendente
+    participant UI as Interface Web
+    participant API as AtendimentoController
+    participant Entrada as AtendimentoService
+    participant Veiculos as VeiculoRepository
+    participant Clientes as ClienteRepository
+    participant Servicos as ServicoRepository
+    participant Atendimentos as AtendimentoRepository
+    participant Fila as FilaService
+
+    Cliente->>Atendente: Informa placa e dados para a entrada
+    Atendente->>UI: Preenche entrada e escolhe servico
+    UI->>API: POST /atendimentos
+    API->>Entrada: registrarEntrada(dados, usuarioId)
+    Entrada->>Veiculos: buscarPorPlaca(placa normalizada)
+    Veiculos-->>Entrada: Veiculo existente ou ausente
+    Entrada->>Servicos: buscarPorId(servicoId)
+    Servicos-->>Entrada: Servico ativo
+    alt Veiculo ja cadastrado
+        Entrada->>Atendimentos: buscarEmAndamentoPorVeiculo(veiculoId)
+        Atendimentos-->>Entrada: Nenhum atendimento em andamento
+    else Veiculo ainda nao cadastrado
+        Entrada->>Clientes: buscarPorTelefone(telefone)
+        alt Cliente ainda nao cadastrado
+            Entrada->>Clientes: criar(nome, telefone)
+        end
+        Entrada->>Veiculos: criar(placa, modelo, cor, clienteId)
+        Veiculos-->>Entrada: Veiculo cadastrado
+    end
+    Entrada->>Atendimentos: criar(veiculoId, servicoId, usuarioId)
+    Atendimentos-->>Entrada: Atendimento criado
+    Note over Atendimentos,Fila: A fila e derivada dos atendimentos em andamento, sem tabela propria
+    Entrada->>Fila: consultarFila()
+    Fila->>Atendimentos: listarEmAndamento() em ordem de chegada
+    Atendimentos-->>Fila: Atendimentos com veiculo e servico
+    Fila-->>Entrada: Itens com posicao e previsao ate a conclusao
+    Entrada-->>API: Atendimento, posicao e tempo estimado
+    API-->>UI: 201 Entrada registrada
+    UI-->>Atendente: Mostra placa, servico, posicao e previsao
+    Atendente-->>Cliente: Informa posicao e tempo estimado

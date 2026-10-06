@@ -1,0 +1,30 @@
+flowchart LR
+    UI[Interface Web Vue.js]
+    DB[(Banco de dados)]
+
+    subgraph API[Aplicacao WashFlow Node.js e Express]
+        ROTAS[Rotas e autenticacao]
+        CTRL[Controllers]
+        ENTRADA[AtendimentoService]
+        FILA[FilaService]
+        CAD[CadastroService]
+        AUTH[AuthService]
+        REGRAS[Regras de dominio: fila, transicoes e placa]
+        REPOS[Repositories Sequelize]
+        ROTAS --> CTRL
+        CTRL --> ENTRADA
+        CTRL --> FILA
+        CTRL --> CAD
+        CTRL --> AUTH
+        ENTRADA --> FILA
+        ENTRADA --> REGRAS
+        FILA --> REGRAS
+        CAD --> REGRAS
+        ENTRADA --> REPOS
+        FILA --> REPOS
+        CAD --> REPOS
+        AUTH --> REPOS
+    end
+
+    UI -->|HTTP e JSON| ROTAS
+    REPOS -->|consultas e gravacoes| DB

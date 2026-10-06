@@ -1,0 +1,75 @@
+classDiagram
+    class Usuario {
+      id
+      nome
+      login
+      senhaHash
+      perfil
+    }
+    class Cliente {
+      id
+      nome
+      telefone
+    }
+    class Veiculo {
+      id
+      placa
+      modelo
+      cor
+    }
+    class Servico {
+      id
+      nome
+      preco
+      duracaoEstimadaMinutos
+    }
+    class Atendimento {
+      id
+      status
+      horaEntrada
+      horaInicio
+      horaFim
+    }
+    class AtendimentoService {
+      +registrarEntrada(dados, usuarioId)
+    }
+    class FilaService {
+      +consultarFila()
+      +avancarStatus(id)
+    }
+    class RegrasFila {
+      +calcularFila(atendimentos, agora)
+    }
+    class FluxoStatus {
+      +proximaTransicao(status)
+    }
+    class AtendimentoRepository {
+      +listarEmAndamento()
+      +buscarPorId(id)
+      +criar(dados)
+      +salvar(atendimento)
+    }
+    class ClienteRepository {
+      +buscarPorTelefone(telefone)
+      +criar(dados)
+    }
+    class VeiculoRepository {
+      +buscarPorPlaca(placa)
+      +criar(dados)
+    }
+    class ServicoRepository {
+      +buscarPorId(id)
+    }
+
+    Cliente "1" --> "0..*" Veiculo
+    Veiculo "1" --> "0..*" Atendimento
+    Servico "1" --> "0..*" Atendimento
+    Usuario "1" --> "0..*" Atendimento
+    AtendimentoService ..> AtendimentoRepository
+    AtendimentoService ..> ClienteRepository
+    AtendimentoService ..> VeiculoRepository
+    AtendimentoService ..> ServicoRepository
+    AtendimentoService ..> FilaService
+    FilaService ..> AtendimentoRepository
+    FilaService ..> RegrasFila
+    FilaService ..> FluxoStatus

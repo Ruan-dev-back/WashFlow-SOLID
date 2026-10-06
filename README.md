@@ -25,7 +25,7 @@ O WashFlow é uma aplicação gerencial voltada para o **registro rápido da ent
 | | Quem | Como usa o sistema |
 |---|---|---|
 | **Primário** | Proprietários, gerentes e funcionários da recepção/operação de lava rápidos | Operam a fila, dão entrada nos veículos e acompanham os indicadores |
-| **Secundário** | Clientes (motoristas) que utilizam o estabelecimento | Não acessam o sistema: recebem as notificações e se beneficiam da previsibilidade no atendimento |
+| **Secundário** | Clientes (motoristas) que utilizam o estabelecimento | Não acessam o sistema: o atendente informa a previsão; as notificações automáticas estão planejadas |
 
 ### 1.4. Escopo principal
 
@@ -89,7 +89,7 @@ Visão macro do sistema: quem usa o WashFlow e com quais sistemas externos ele c
 
 ![C4 Nível 1 - Diagrama de Contexto](docs/c4-nivel1-contexto.png)
 
-O **Funcionário/Recepcionista** atende o cliente na entrada e opera a fila. O **Gerente** acompanha a operação e consulta os indicadores. O **Cliente**, dono do veículo, não opera o sistema — ele é avisado quando o serviço termina. O WashFlow centraliza o cadastro de clientes e veículos, o controle da fila e o status dos atendimentos, e depende de um único sistema externo, o **Serviço de WhatsApp/SMS**, para entregar as mensagens de aviso ao cliente.
+O **Funcionário/Recepcionista** atende o cliente na entrada e opera a fila. O **Gerente** acompanha a operação. O **Cliente**, dono do veículo, não opera o sistema. O WashFlow centraliza o cadastro de clientes e veículos, o controle da fila e o status dos atendimentos. A imagem original mostra também a integração futura com **WhatsApp/SMS**; a [fonte Mermaid do contexto implementado](docs/c4-nivel1-contexto.mmd) distingue o escopo atual, sem essa conexão ainda inexistente.
 
 ### 3.2. Nível 2 — Container
 
@@ -97,19 +97,23 @@ Abrindo a caixa do WashFlow: as partes tecnológicas que compõem o sistema e co
 
 ![C4 Nível 2 - Diagrama de Container](docs/c4-nivel2-container.png)
 
+A [fonte Mermaid dos containers implementados](docs/c4-nivel2-container.mmd) mostra a interface, a API e o banco. A imagem original acima representa a arquitetura alvo, incluindo módulos futuros.
+
 | Container | Tecnologia | Responsabilidade |
 |---|---|---|
 | **Interface Web** | Vue.js | Telas de cadastro, painel da fila e atualização de status usadas no balcão |
-| **Aplicação WashFlow** | Node.js / Express | Monolito com os módulos de autenticação, usuários, clientes, veículos, fila, atendimento, notificações e relatórios |
-| **Banco de Dados** | PostgreSQL | Armazena usuários, clientes, veículos, serviços, atendimentos, fila e notificações |
+| **Aplicação WashFlow** | Node.js / Express | Monolito com autenticação, cadastros, atendimento e gestão de fila; notificações e relatórios estão planejados |
+| **Banco de Dados** | PostgreSQL no destino documentado; SQLite no desenvolvimento | Armazena usuários, clientes, veículos, serviços e atendimentos; a fila é derivada dos atendimentos |
 
-A Interface Web faz requisições HTTP/JSON à Aplicação WashFlow, que lê e grava no Banco de Dados e solicita o envio de notificações ao serviço externo de WhatsApp/SMS.
+A Interface Web faz requisições HTTP/JSON à Aplicação WashFlow, que lê e grava no Banco de Dados. A conexão com WhatsApp/SMS desenhada no C4 é planejada, não uma chamada feita pelo código atual.
 
 ### 3.3. Nível 3 — Componentes
 
 Decomposição do container **Aplicação WashFlow** nos agrupamentos de código que o formam.
 
 ![C4 Nível 3 - Diagrama de Componentes](docs/c4-nivel3-componentes.png)
+
+[Fonte Mermaid atualizada dos componentes](docs/c4-nivel3-componentes.mmd). A imagem registra a visão original da equipe; a fonte explicita as regras de domínio extraídas nesta refatoração. A seta da imagem para WhatsApp/SMS representa trabalho futuro.
 
 | Componente | Tecnologia | Responsabilidade |
 |---|---|---|
@@ -118,24 +122,25 @@ Decomposição do container **Aplicação WashFlow** nos agrupamentos de código
 | `FilaController` | Express Router | Ponto de entrada REST da consulta da fila e do avanço de status |
 | `CadastroController` | Express Router | Ponto de entrada REST dos cadastros de clientes, veículos e serviços |
 | `AuthService` | Módulo de negócio | Valida credenciais, compara o hash BCrypt e emite o token JWT |
-| `AtendimentoService` | Módulo de negócio | Regra do cadastro rápido de entrada e da unicidade do veículo na fila |
-| `FilaService` | Módulo de negócio | Calcula o tempo de espera estimado e controla o fluxo de status |
+| `AtendimentoService` | Módulo de negócio | Coordena consulta ou cadastro do veículo, criação do atendimento e retorno da posição e previsão |
+| `FilaService` | Módulo de negócio | Consulta a fila e persiste o avanço de status |
 | `CadastroService` | Módulo de negócio | Regras dos cadastros de apoio |
+| `domain/fila`, `domain/fluxoStatus`, `domain/placa` | Regras de domínio | Cálculo puro da previsão, definição das transições e normalização de placa |
 | `UsuarioRepository`, `ClienteRepository`, `VeiculoRepository`, `ServicoRepository`, `AtendimentoRepository` | Sequelize ORM | Única via de acesso ao banco de dados |
 | `AuthMiddleware` | Middleware Express | Valida o token JWT e o perfil do usuário em toda rota protegida |
 | `ErrorHandler` | Middleware Express | Destino único de todos os erros da API |
 
-### 3.4. Nível 4 — Código
+### 3.4. Limite da documentação C4
 
-O nível de código do C4 é representado pelo **diagrama de classes** da seção 4, que detalha a implementação dos componentes apresentados no Nível 3.
-
-Vale registrar a ressalva do próprio criador do modelo: diagramas em nível de código não devem ser mantidos manualmente, pois o código muda com frequência e o desenho fica desatualizado em poucas horas. Por isso, o diagrama de classes deste projeto é derivado diretamente do código-fonte versionado neste repositório e deve ser regerado a partir dele — nunca editado à mão de forma independente.
+Os três diagramas acima documentam contexto, containers e componentes. Os diagramas UML de classes e de sequência da seção 4 são artefatos separados: o primeiro descreve estrutura de código; o segundo descreve uma interação da recepção. Nenhum deles é apresentado como C4.
 
 ---
 
-## 4. Diagrama de Classes (Nível 4 — Código)
+## 4. Diagramas UML
 
-Representação das classes do sistema segundo o C4, detalhando os atributos, os métodos e os relacionamentos dos componentes do Nível 3.
+### 4.1. Diagrama de Classes
+
+Representação estrutural das entidades e dos serviços. A imagem original da equipe é mantida abaixo; a [fonte Mermaid do recorte refatorado](docs/diagrama-classes.mmd) mostra as dependências e regras atuais do fluxo de entrada e fila.
 
 ![Diagrama de Classes](docs/diagrama-classes.png)
 
@@ -148,25 +153,36 @@ Representação das classes do sistema segundo o C4, detalhando os atributos, os
 | `Atendimento` | Modelo | Entrada de um veículo no pátio: liga `Veiculo`, `Servico` e `Usuario`, e guarda o status e os horários |
 | `StatusAtendimento` | Enumeração | `AGUARDANDO`, `EM_LAVAGEM`, `SECAGEM`, `FINALIZADO` |
 | `AtendimentoService` | Negócio | Registra a entrada reaproveitando cliente e veículo já cadastrados e impede duplicidade na fila |
-| `FilaService` | Negócio | Monta a fila, calcula a previsão de conclusão e avança o status respeitando o fluxo |
+| `FilaService` | Negócio | Consulta os atendimentos em andamento e persiste o avanço de status |
+| `domain/fila` e `domain/fluxoStatus` | Domínio | Calculam a previsão e definem a próxima transição sem acessar HTTP ou banco |
 | `AuthService` | Negócio | Autentica o usuário e emite o token JWT |
 | `*Repository` | Persistência | Isolam o acesso ao banco; nenhuma outra camada executa consultas |
 | `*Controller` | Apresentação | Traduzem HTTP em chamadas de serviço e serviço em resposta HTTP |
 
 > **A fila não é uma classe persistida.** Ela é a consulta dos `Atendimento` cujo status ainda não é `FINALIZADO`, ordenados pela hora de entrada. Modelar a fila como tabela exigiria manter posições sincronizadas a cada mudança; derivá-la dos atendimentos elimina essa fonte de inconsistência.
 
+### 4.2. Diagrama de Sequência da recepção
+
+O diagrama abaixo foi extraído do documento **João Gabriel.docx** e preserva a representação UML de interação produzida anteriormente pela equipe. Ele mostra Cliente → Atendente → consulta da placa → cadastro se necessário → escolha do serviço → criação da ordem → entrada na fila → informação de posição e tempo. No código atual, a "OrdemServico" do desenho corresponde a `Atendimento`, e a `Fila` é calculada a partir dos atendimentos em andamento, sem tabela ou objeto persistido próprio.
+
+![Diagrama de sequência original da equipe](docs/diagrama-sequencia-original.png)
+
+A [versão Mermaid do fluxo implementado](docs/diagrama-sequencia.mmd) detalha a requisição única de entrada. A interface coleta os dados e a escolha do serviço antes de enviar a requisição; o serviço consulta a placa, reutiliza veículo existente ou cadastra cliente e veículo quando necessário, cria o atendimento e devolve a posição com o tempo estimado até a conclusão. O envio de notificações não faz parte desse fluxo implementado.
+
 ---
 
 ## 5. Padrão de Arquitetura Adotado
 
-O WashFlow adota **dois padrões complementares**: **Monolítico em Camadas (Layered Architecture)** como padrão principal de estruturação do sistema, e **MVC (Model-View-Controller)** como padrão de organização da apresentação.
+O back-end do WashFlow adota **dois padrões complementares**: **Monolítico em Camadas (Layered Architecture)** como estrutura principal, e **MVC (Model-View-Controller)** como organização da apresentação. A interface Vue.js é um container separado no C4 Nível 2.
 
 ### 5.1. Padrão principal — Monolítico em Camadas (Layered)
 
-Todo o sistema — interface de entrada, regras de negócio e acesso ao banco — é empacotado e executado como uma **única unidade implantável** (o container `Aplicação WashFlow`), em um único processo. Dentro desse bloco único, os arquivos são organizados em **níveis horizontais de responsabilidade**, e cada camada só conversa com a camada imediatamente abaixo:
+O back-end — rotas HTTP, regras de negócio e acesso ao banco — é executado no container `Aplicação WashFlow`. Seus arquivos são organizados por responsabilidade:
 
 ```
-Rotas  →  Controllers  →  Services  →  Repositories  →  Models  →  Banco de Dados
+Rotas → Controllers → Services → Repositories → Models → Banco de Dados
+                           ↓
+                     Regras de domínio
 ```
 
 **Por que esse padrão:**
@@ -177,9 +193,9 @@ Rotas  →  Controllers  →  Services  →  Repositories  →  Models  →  Ban
 
 3. **É o padrão que melhor atende os RNF priorizados ao menor custo de complexidade.** A Disponibilidade (RNF01) de 99,9% em horário comercial é alcançável com instâncias redundantes de um monólito, sem orquestração de serviços. O desempenho de 500 ms no p95 (RNF02) é mais fácil de garantir sem saltos de rede entre serviços. Como afirma o material da disciplina: *"a melhor arquitetura não é a mais moderna ou a mais complexa, mas sim a que melhor resolve os requisitos de negócio com o menor custo de complexidade possível."*
 
-4. **A separação em camadas preserva a testabilidade e a manutenibilidade.** A regra de cálculo da fila vive isolada em `FilaService`, sem qualquer dependência de HTTP ou de banco. Ela pode ser testada e alterada sem tocar em controller nem em repositório.
+4. **A separação em camadas preserva a testabilidade e a manutenibilidade.** O cálculo da fila vive em `backend/src/domain/fila.js`, sem dependência de HTTP ou banco. `FilaService` coordena a consulta ao repositório e aplica essa regra; `AtendimentoService` coordena os repositórios necessários e consulta a fila depois de criar a entrada.
 
-**Trade-off aceito:** por ser uma unidade única, todo o sistema é reimplantado a cada alteração, e um defeito grave em qualquer módulo pode derrubar a aplicação inteira. É o preço reconhecido em troca da simplicidade — e é mitigado pela disciplina de camadas, que impede que um módulo alcance diretamente as entranhas de outro.
+**Trade-off aceito:** o back-end é reimplantado como uma unidade a cada alteração, e um defeito grave em um módulo pode derrubar a API inteira. A separação de responsabilidades e os testes reduzem esse risco, mas não o eliminam.
 
 **Ponto de atenção documentado:** o RNF03 (Resiliência) exige que a falha do serviço externo de WhatsApp/SMS não trave o controle de pátio. Dentro do monólito, isso será resolvido com **processamento assíncrono** do envio de notificações — o atendimento é finalizado e a notificação é enfileirada, nunca aguardada de forma síncrona.
 
@@ -202,10 +218,23 @@ O MVC organiza a camada de apresentação, distribuída entre dois containers do
 | Apresentação (View) | `frontend/src/views/` | Nunca chama a API diretamente — usa `frontend/src/services/` |
 | Rotas | `backend/src/routes/` | Mapeia URL para controller e declara a validação de entrada |
 | Apresentação (Controller) | `backend/src/controllers/` | Nenhuma regra de negócio |
-| Negócio | `backend/src/services/` | Todas as regras. Não conhece HTTP |
+| Negócio | `backend/src/services/` | Coordena casos de uso e aplica regras do domínio; não conhece HTTP |
+| Domínio | `backend/src/domain/` | Regras puras de fila, transição de status e placa; não acessa banco ou HTTP |
 | Persistência | `backend/src/repositories/` | Única camada que consulta o banco |
-| Domínio (Model) | `backend/src/models/` | Entidades e associações |
+| Entidades (Model) | `backend/src/models/` | Entidades e associações |
 | Transferência | `backend/src/dtos/` | Impede que dados sensíveis (ex.: hash de senha) saiam da API |
+
+### 5.4. Aplicação dos princípios SOLID no fluxo principal
+
+| Princípio | Decisão no código |
+|---|---|
+| Responsabilidade única | `AtendimentoService` coordena a entrada; `domain/fila` calcula previsões; `domain/fluxoStatus` define transições; os repositories fazem persistência. |
+| Aberto/fechado | A sequência de transições fica em `domain/fluxoStatus`; a orquestração de `FilaService` não contém condicionais por etapa. |
+| Substituição de Liskov | As fábricas de serviços recebem colaboradores pelos métodos que usam; implementações alternativas com o mesmo contrato podem substituir os repositories em testes. |
+| Segregação de interfaces | `criarAtendimentoService` recebe portas separadas para clientes, veículos, serviços, atendimentos e fila; `criarFilaService` recebe apenas a porta de atendimentos e um relógio. |
+| Inversão de dependência | As regras centrais são instanciadas por fábricas com dependências injetadas; a composição padrão conecta os repositories Sequelize na borda. |
+
+Em JavaScript, esses contratos são estruturais e não usam interfaces formais. A substituição pressupõe que cada colaborador implemente os métodos e retornos esperados; os testes exercitam um repositório substituto e o fluxo completo com SQLite em memória.
 
 ---
 
@@ -242,7 +271,7 @@ As escolhas abaixo foram feitas para atender os requisitos não funcionais prior
 | Ferramenta | Papel no projeto |
 |---|---|
 | **Git e GitHub** | Versionamento e repositório central da equipe |
-| **Draw.io** | Elaboração dos diagramas C4 e do diagrama de classes |
+| **Draw.io e Mermaid** | Preservação dos diagramas originais da equipe e fontes textuais atualizadas dos componentes, classes e interação |
 
 ---
 
@@ -261,6 +290,7 @@ Esta entrega corresponde a aproximadamente **35% do projeto**. O recorte prioriz
 **Módulo de Atendimento (Recepção)**
 - Registro de entrada de veículo em uma única requisição, a partir de placa, modelo, cor, nome e telefone do cliente e tipo de lavagem
 - Reaproveitamento automático de cliente e veículo já cadastrados
+- Retorno da posição na fila e da previsão de conclusão ao registrar a entrada
 - Normalização e validação de placa (formatos antigo `ABC1234` e Mercosul `ABC1D23`)
 - Cadastro e consulta de clientes, veículos e tipos de lavagem
 
@@ -297,10 +327,11 @@ Esta entrega corresponde a aproximadamente **35% do projeto**. O recorte prioriz
 | Funcionário tentando cadastrar tipo de lavagem | `403` |
 | Fila com lavagens de 30, 60 e 120 min | Previsões de 30, 90 e 210 min |
 | Após finalizar o primeiro veículo | Previsões recalculadas para 60 e 180 min |
+| Reentrada de veículo já cadastrado após finalizar atendimento | Mesmo veículo é reutilizado, sem cadastro de cliente ou veículo duplicado |
 
 ### 7.4. O que a entrega demonstra sobre a arquitetura
 
-O fluxo implementado atravessa **todas as camadas** do padrão declarado na seção 5: uma requisição de entrada de veículo passa por rota → validação → middleware de autenticação → controller → service → repository → model → banco, e volta como DTO. A regra mais complexa do sistema — o cálculo da fila — está isolada em `FilaService`, sem qualquer dependência de HTTP ou de Sequelize, comprovando na prática a separação que a arquitetura promete.
+O fluxo implementado atravessa **todas as camadas** do padrão declarado na seção 5: uma requisição de entrada de veículo passa por rota → validação → middleware de autenticação → controller → service → repository → model → banco. O serviço consulta a fila e acrescenta posição e previsão à resposta. O cálculo em `domain/fila.js` é puro e testável sem HTTP ou Sequelize; `FilaService` consulta os atendimentos em andamento.
 
 ---
 
@@ -322,7 +353,7 @@ Entregáveis: `RelatorioService`, consultas por período no `AtendimentoReposito
 
 ### Etapa 4 — Qualidade e aderência aos requisitos não funcionais
 
-- **Testes automatizados** das regras de negócio, com foco em `FilaService` e `AtendimentoService`
+- **Ampliação dos testes automatizados** para casos concorrentes, validação HTTP e demais módulos
 - **Medição de desempenho** do endpoint de entrada de veículo, para confirmar o p95 abaixo de 500 ms exigido pelo RNF02
 - **Refinamento de usabilidade** do formulário de recepção, validando em cronômetro o limite de 30 segundos do RNF05
 - **Preparação para implantação** com PostgreSQL, variáveis de ambiente de produção e verificação de saúde da aplicação, sustentando a meta de 99,9% de disponibilidade do RNF01
@@ -334,17 +365,19 @@ Entregáveis: `RelatorioService`, consultas por período no `AtendimentoReposito
 ```
 WashFlow/
 ├── README.md                  Documentação do projeto
-├── docs/                      Diagramas C4 e diagrama de classes
+├── docs/                      C4, classes UML e sequência UML (imagem original e Mermaid)
 ├── backend/                   API - Node.js / Express
-│   └── src/
+│   ├── src/
 │       ├── config/            Conexão com o banco, constantes e carga inicial
 │       ├── routes/            Camada de rotas
 │       ├── controllers/       Camada de apresentação
 │       ├── services/          Camada de negócio
+│       ├── domain/            Regras puras de fila, status e placa
 │       ├── repositories/      Camada de persistência
 │       ├── models/            Entidades de domínio
 │       ├── dtos/              Objetos de transferência
 │       └── middlewares/       Autenticação, validação e tratamento de erros
+│   └── test/                  Testes automatizados do fluxo principal
 └── frontend/                  Interface Web - Vue.js
     └── src/
         ├── views/             Telas (View)
@@ -371,5 +404,7 @@ npm run dev
 ```
 
 O banco de destino documentado é o **PostgreSQL**. Para desenvolvimento local, `DB_DIALECT=sqlite` no `.env` permite rodar o projeto sem instalar o Postgres; a aplicação não percebe a diferença. Na primeira execução o sistema cria as tabelas e a carga inicial.
+
+**Verificação local:** em `backend/`, execute `npm test` (SQLite em memória); em `frontend/`, execute `npm run build`. Os testes cobrem a entrada de veículo novo e existente, a posição e a previsão, a prevenção de duplicidade e o avanço de status.
 
 **Usuários de demonstração:** `recepcao` / `recepcao123` (Funcionário) e `gerente` / `gerente123` (Gerente).

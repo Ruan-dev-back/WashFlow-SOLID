@@ -1,0 +1,14 @@
+flowchart LR
+    Atendente[Funcionario ou recepcionista]
+    Gerente[Gerente]
+
+    subgraph WashFlow[Sistema WashFlow]
+        UI[Interface Web Vue.js]
+        API[Aplicacao WashFlow Node.js e Express]
+        DB[(Banco de dados PostgreSQL ou SQLite)]
+        UI -->|HTTP e JSON| API
+        API -->|Le e grava| DB
+    end
+
+    Atendente -->|Login, recepcao e fila| UI
+    Gerente -->|Login e operacao| UI
