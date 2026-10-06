@@ -9,7 +9,9 @@ const clienteRepository = require('../repositories/clienteRepository');
 const veiculoRepository = require('../repositories/veiculoRepository');
 const servicoRepository = require('../repositories/servicoRepository');
 const atendimentoRepository = require('../repositories/atendimentoRepository');
+const filaService = require('./filaService');
 const AppError = require('../middlewares/appError');
+const { normalizarPlaca } = require('../domain/placa');
 
 /**
  * Registra a entrada de um veiculo no patio.
@@ -17,50 +19,65 @@ const AppError = require('../middlewares/appError');
  * Cliente e veiculo sao reaproveitados quando ja existem: no balcao, o
  * recepcionista nao deve precisar saber se aquele carro ja e cadastrado.
  */
-async function registrarEntrada(
-  { placa, modelo, cor, nomeCliente, telefone, servicoId },
-  usuarioId
-) {
-  const servico = await servicoRepository.buscarPorId(servicoId);
-  if (!servico || !servico.ativo) {
-    throw new AppError('Servico nao encontrado.', 404);
-  }
+function criarAtendimentoService({ clientes, veiculos, servicos, atendimentos, fila }) {
+  async function registrarEntrada(
+    { placa, modelo, cor, nomeCliente, telefone, servicoId },
+    usuarioId
+  ) {
+    const placaNormalizada = normalizarPlaca(placa);
+    let veiculo = await veiculos.buscarPorPlaca(placaNormalizada);
 
-  const placaNormalizada = placa.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const servico = await servicos.buscarPorId(servicoId);
+    if (!servico || !servico.ativo) {
+      throw new AppError('Servico nao encontrado.', 404);
+    }
 
-  let cliente = await clienteRepository.buscarPorTelefone(telefone);
-  if (!cliente) {
-    cliente = await clienteRepository.criar({ nome: nomeCliente, telefone });
-  }
+    if (veiculo) {
+      const jaNaFila = await atendimentos.buscarEmAndamentoPorVeiculo(veiculo.id);
+      if (jaNaFila) {
+        throw new AppError(`O veiculo ${placaNormalizada} ja esta na fila.`, 409);
+      }
+    } else {
+      let cliente = await clientes.buscarPorTelefone(telefone);
+      if (!cliente) {
+        cliente = await clientes.criar({ nome: nomeCliente, telefone });
+      }
+      veiculo = await veiculos.criar({
+        placa: placaNormalizada,
+        modelo,
+        cor,
+        clienteId: cliente.id,
+      });
+    }
 
-  let veiculo = await veiculoRepository.buscarPorPlaca(placaNormalizada);
-  if (!veiculo) {
-    veiculo = await veiculoRepository.criar({
-      placa: placaNormalizada,
-      modelo,
-      cor,
-      clienteId: cliente.id,
+    const criado = await atendimentos.criar({
+      veiculoId: veiculo.id,
+      servicoId: servico.id,
+      usuarioId,
     });
+    const atendimento = await atendimentos.buscarPorId(criado.id);
+    const itemFila = (await fila.consultarFila()).find((item) => item.id === criado.id);
+
+    // Mantem os campos antigos da resposta e acrescenta a previsao do painel.
+    const dados = atendimento.toJSON ? atendimento.toJSON() : atendimento;
+    return {
+      ...dados,
+      posicao: itemFila ? itemFila.posicao : null,
+      tempoEsperaEstimadoMinutos: itemFila
+        ? itemFila.tempoEsperaEstimadoMinutos
+        : null,
+    };
   }
 
-  // Um veiculo nao pode ocupar duas posicoes na fila ao mesmo tempo.
-  const jaNaFila = await atendimentoRepository.buscarEmAndamentoPorVeiculo(
-    veiculo.id
-  );
-  if (jaNaFila) {
-    throw new AppError(
-      `O veiculo ${placaNormalizada} ja esta na fila.`,
-      409
-    );
-  }
-
-  const atendimento = await atendimentoRepository.criar({
-    veiculoId: veiculo.id,
-    servicoId: servico.id,
-    usuarioId,
-  });
-
-  return atendimentoRepository.buscarPorId(atendimento.id);
+  return { registrarEntrada };
 }
 
-module.exports = { registrarEntrada };
+const { registrarEntrada } = criarAtendimentoService({
+  clientes: clienteRepository,
+  veiculos: veiculoRepository,
+  servicos: servicoRepository,
+  atendimentos: atendimentoRepository,
+  fila: filaService,
+});
+
+module.exports = { criarAtendimentoService, registrarEntrada };

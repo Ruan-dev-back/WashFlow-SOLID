@@ -6,6 +6,7 @@ const clienteRepository = require('../repositories/clienteRepository');
 const veiculoRepository = require('../repositories/veiculoRepository');
 const servicoRepository = require('../repositories/servicoRepository');
 const AppError = require('../middlewares/appError');
+const { normalizarPlaca } = require('../domain/placa');
 
 const listarClientes = () => clienteRepository.listar();
 
@@ -25,7 +26,7 @@ async function criarVeiculo({ placa, modelo, cor, clienteId }) {
     throw new AppError('Cliente nao encontrado.', 404);
   }
 
-  const placaNormalizada = placa.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const placaNormalizada = normalizarPlaca(placa);
   const existente = await veiculoRepository.buscarPorPlaca(placaNormalizada);
   if (existente) {
     throw new AppError('Ja existe um veiculo com esta placa.', 409);

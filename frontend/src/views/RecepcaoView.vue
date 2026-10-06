@@ -42,7 +42,10 @@ async function submeter() {
       ...form,
       servicoId: Number(form.servicoId),
     });
-    sucesso.value = `${atendimento.veiculo.placa} entrou na fila para ${atendimento.servico.nome}.`;
+    const previsao = atendimento.posicao == null
+      ? ''
+      : ` Posicao ${atendimento.posicao}, previsao de conclusao em ~${atendimento.tempoEsperaEstimadoMinutos} min.`;
+    sucesso.value = `${atendimento.veiculo.placa} entrou na fila para ${atendimento.servico.nome}.${previsao}`;
     Object.assign(form, FORMULARIO_VAZIO);
   } catch (e) {
     erro.value = e.message;

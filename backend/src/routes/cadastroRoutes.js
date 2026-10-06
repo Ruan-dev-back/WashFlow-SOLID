@@ -12,6 +12,7 @@ const asyncHandler = require('../middlewares/asyncHandler');
 const validar = require('../middlewares/validar');
 const { autenticar, autorizar } = require('../middlewares/auth');
 const { VALIDACAO, PERFIS } = require('../config/constants');
+const { normalizarPlaca } = require('../domain/placa');
 
 const router = express.Router();
 
@@ -38,7 +39,7 @@ router.post(
   '/veiculos',
   [
     body('placa')
-      .customSanitizer((v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''))
+      .customSanitizer(normalizarPlaca)
       .matches(VALIDACAO.PLACA_REGEX)
       .withMessage('Placa invalida. Use o formato ABC1234 ou ABC1D23.'),
     body('modelo').notEmpty().withMessage('Informe o modelo do veiculo.').trim(),
