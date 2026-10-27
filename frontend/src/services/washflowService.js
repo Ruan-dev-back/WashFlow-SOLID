@@ -33,3 +33,13 @@ export async function avancarStatus(id) {
   const { dados } = await api.patch(`/atendimentos/${id}/status`);
   return dados;
 }
+
+export async function consultarRelatorio(data) {
+  const { dados } = await api.get('/relatorios?data=' + encodeURIComponent(data));
+  return dados;
+}
+
+export async function listarNotificacoes() {
+  const { dados } = await api.get('/notificacoes');
+  return dados;
+}

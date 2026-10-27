@@ -25,8 +25,8 @@ const errorHandler = (err, req, res, _next) => {
 
   return res.status(err.status || 500).json({
     sucesso: false,
-    mensagem: err.message || 'Ocorreu um erro inesperado.',
-    erros: err.erros || [],
+    mensagem: (err.status || 500) >= 500 ? 'Ocorreu um erro inesperado.' : err.message,
+    erros: (err.status || 500) >= 500 ? [] : err.erros || [],
   });
 };
 

@@ -39,7 +39,7 @@ function criarFilaService({ atendimentos, fluxoStatus, notificacoes, relogio = (
     atendimento.status = transicao.status;
     if (transicao.horario) atendimento[transicao.horario] = relogio();
 
-    // A futura notificacao sera assincrona e nao impedira a finalizacao.
+    // A notificacao e persistida em fila, sem chamada HTTP ao Telegram neste fluxo.
     await atendimentos.salvar(atendimento);
     const atualizado = await atendimentos.buscarPorId(id);
     if (transicao.status === 'FINALIZADO' && notificacoes) {
