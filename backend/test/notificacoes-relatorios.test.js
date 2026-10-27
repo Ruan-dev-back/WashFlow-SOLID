@@ -53,3 +53,32 @@ test('relatorio agrega histórico e media das finalizacoes', async () => {
   assert.equal(dados.tempoMedioMinutos, 45);
   assert.equal(dados.porServico.Simples, 2);
 });
+
+
+test('cada aviso vai somente ao Telegram do cliente correto; sem vinculo permanece pendente', async () => {
+  const criarItem = (id, chatId) => ({
+    id, tentativas: 0, atendimento: {
+      veiculo: {
+        placa: 'ABC' + id + '234',
+        cliente: { nome: 'Cliente ' + id, telegramVinculo: chatId ? { chatId } : null },
+      },
+      servico: { nome: 'Lavagem' },
+    },
+  });
+  const enviados = [];
+  const pendentes = [];
+  const notificacoes = {
+    listarPendentes: async () => [criarItem(1, 'chat-A'), criarItem(2, 'chat-B'), criarItem(3, null)],
+    marcarEnviado: async (item) => enviados.push('finalizado-' + item.id),
+    adiarSemVinculo: async (item) => pendentes.push(item.id),
+    marcarFalha: async () => assert.fail('Nao deveria falhar'),
+  };
+  const telegram = {
+    configurado: true,
+    enviar: async (mensagem, chatId) => enviados.push({ chatId, mensagem }),
+  };
+  const svc = criarNotificacaoService({ notificacoes, telegram });
+  assert.equal(await svc.processarPendentes(), 2);
+  assert.deepEqual(enviados.filter((x) => typeof x === 'object').map((x) => x.chatId), ['chat-A', 'chat-B']);
+  assert.deepEqual(pendentes, [3]);
+});
