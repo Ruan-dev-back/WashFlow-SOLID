@@ -14,7 +14,7 @@ async function iniciar() {
     await sequelize.authenticate();
     await sequelize.sync({ alter: true });
     await executarSeed({ passwordHasher });
-    iniciarWorker(services.notificacoes);
+    iniciarWorker({ notificacoes: services.notificacoes, telegramVinculo: services.telegramVinculo });
 
     app.listen(PORT, () =>
       console.log(`API WashFlow ouvindo em http://localhost:${PORT}/api`)

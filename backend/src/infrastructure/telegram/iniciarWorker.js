@@ -1,9 +1,13 @@
-/** Worker simples no mesmo processo do monolito: reprocessa pendências sem bloquear HTTP. */
-function iniciarWorker(notificacaoService, intervaloMs = 15000) {
+/**
+ * Worker e receptor de /start no mesmo processo do monolito.
+ * Para o MVP, executar uma unica instancia; getUpdates nao pode coexistir com webhook.
+ */
+function iniciarWorker({ notificacoes, telegramVinculo }, intervaloMs = 5000) {
   const executar = () => {
-    notificacaoService.processarPendentes().catch((erro) =>
-      console.error('Erro ao processar notificacoes pendentes:', erro.message)
-    );
+    telegramVinculo.processarAtualizacoes().catch((e) =>
+      console.error('Falha ao ler Telegram /start:', e.message));
+    notificacoes.processarPendentes().catch((e) =>
+      console.error('Falha ao enviar notificacoes:', e.message));
   };
   executar();
   const temporizador = setInterval(executar, intervaloMs);

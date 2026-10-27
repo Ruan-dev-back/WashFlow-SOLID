@@ -4,6 +4,9 @@ const veiculoRepository = require('./repositories/veiculoRepository');
 const servicoRepository = require('./repositories/servicoRepository');
 const atendimentoRepository = require('./repositories/atendimentoRepository');
 const notificacaoRepository = require('./repositories/notificacaoRepository');
+const telegramVinculoRepository = require('./repositories/telegramVinculoRepository');
+const { criarTelegramVinculoService } = require('./services/telegramVinculoService');
+const { criarTelegramVinculoController } = require('./controllers/telegramVinculoController');
 const { criarTelegramClient } = require('./infrastructure/telegram/telegramClient');
 const { criarNotificacaoService } = require('./services/notificacaoService');
 const { criarRelatorioService } = require('./services/relatorioService');
@@ -34,12 +37,15 @@ const tokenProvider = criarJwtTokenProvider({
 
 const telegram = criarTelegramClient({
   token: process.env.TELEGRAM_BOT_TOKEN,
-  chatId: process.env.TELEGRAM_CHAT_ID,
 });
 const notificacoes = criarNotificacaoService({
   notificacoes: notificacaoRepository, telegram,
 });
 const relatorio = criarRelatorioService({ atendimentos: atendimentoRepository });
+const telegramVinculo = criarTelegramVinculoService({
+  clientes: clienteRepository, vinculos: telegramVinculoRepository,
+  telegram, botUsername: process.env.TELEGRAM_BOT_USERNAME,
+});
 
 const fila = criarFilaService({
   atendimentos: atendimentoRepository,
@@ -62,6 +68,7 @@ const services = {
   }),
   fila,
   notificacoes,
+  telegramVinculo,
   relatorio,
   cliente: criarClienteService({ clientes: clienteRepository }),
   veiculo: criarVeiculoService({ clientes: clienteRepository, veiculos: veiculoRepository }),
@@ -74,6 +81,7 @@ const controllers = {
   fila: criarFilaController(services.fila),
   relatorio: criarRelatorioController(services.relatorio),
   notificacao: criarNotificacaoController(services.notificacoes),
+  telegramVinculo: criarTelegramVinculoController(services.telegramVinculo),
   cadastro: criarCadastroController({
     clienteService: services.cliente,
     veiculoService: services.veiculo,

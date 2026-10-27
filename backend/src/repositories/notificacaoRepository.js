@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Notificacao, Atendimento, Veiculo, Servico } = require('../models');
+const { Notificacao, Atendimento, Veiculo, Cliente, Servico, TelegramVinculo } = require('../models');
 
 async function enfileirar(atendimentoId) {
   const [notificacao] = await Notificacao.findOrCreate({
@@ -19,7 +19,12 @@ function listarPendentes() {
     include: [{
       model: Atendimento, as: 'atendimento',
       include: [
-        { model: Veiculo, as: 'veiculo' },
+        { model: Veiculo, as: 'veiculo', include: [{
+          model: Cliente, as: 'cliente', include: [{
+            model: TelegramVinculo, as: 'telegramVinculo',
+            attributes: ['chatId'],
+          }],
+        }] },
         { model: Servico, as: 'servico' },
       ],
     }],
@@ -33,6 +38,13 @@ function listarRecentes() {
     order: [['createdAt', 'DESC']],
     limit: 40,
     attributes: ['id', 'atendimentoId', 'status', 'tentativas', 'proximaTentativaEm', 'enviadoEm', 'createdAt'],
+  });
+}
+
+async function adiarSemVinculo(notificacao) {
+  await notificacao.update({
+    status: 'PENDENTE',
+    proximaTentativaEm: new Date(Date.now() + 60_000),
   });
 }
 
@@ -54,4 +66,4 @@ async function marcarFalha(notificacao, erro) {
   });
 }
 
-module.exports = { enfileirar, listarPendentes, listarRecentes, marcarEnviado, marcarFalha };
+module.exports = { enfileirar, listarPendentes, listarRecentes, marcarEnviado, marcarFalha, adiarSemVinculo };

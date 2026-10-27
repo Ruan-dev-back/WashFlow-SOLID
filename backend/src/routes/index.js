@@ -15,7 +15,7 @@ function criarRoutes({ controllers, autenticar }) {
   );
 
   router.use(criarAuthRoutes(controllers.auth));
-  router.use(criarCadastroRoutes({ cadastroController: controllers.cadastro, autenticar }));
+  router.use(criarCadastroRoutes({ cadastroController: controllers.cadastro, telegramVinculoController: controllers.telegramVinculo, autenticar }));
   router.use(criarAtendimentoRoutes({
     atendimentoController: controllers.atendimento,
     filaController: controllers.fila,

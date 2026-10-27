@@ -7,20 +7,20 @@ const { criarRelatorioService } = require('../src/services/relatorioService');
 test('Telegram envia ao chat configurado usando Bot API', async () => {
   const chamadas = [];
   const telegram = criarTelegramClient({
-    token: 'token-de-teste', chatId: '1234',
+    token: 'token-de-teste',
     fetchImpl: async (url, options) => {
       chamadas.push({ url, options });
       return { ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 7 } }) };
     },
   });
-  await telegram.enviar('Teste de entrega');
+  await telegram.enviar('Teste de entrega', '1234');
   assert.equal(chamadas.length, 1);
   assert.equal(JSON.parse(chamadas[0].options.body).chat_id, '1234');
   assert.equal(JSON.parse(chamadas[0].options.body).text, 'Teste de entrega');
 });
 
 test('falha do Telegram fica pendente e nao derruba atendimento', async () => {
-  const item = { id: 1, tentativas: 0, atendimento: { veiculo: { placa: 'ABC1D23' }, servico: { nome: 'Simples' } } };
+  const item = { id: 1, tentativas: 0, atendimento: { veiculo: { placa: 'ABC1D23', cliente: { nome:'Ana', telegramVinculo:{ chatId:'777' } } }, servico: { nome: 'Simples' } } };
   const chamadas = [];
   const notificacoes = {
     enfileirar: async (id) => { chamadas.push(['fila', id]); return { id }; },
@@ -28,6 +28,7 @@ test('falha do Telegram fica pendente e nao derruba atendimento', async () => {
     marcarEnviado: async () => { chamadas.push(['enviado']); },
     marcarFalha: async (_item, erro) => { chamadas.push(['falhou', erro]); },
     listarRecentes: async () => [],
+    adiarSemVinculo: async () => { chamadas.push(['sem-vinculo']); },
   };
   const telegram = { configurado: true, enviar: async () => { throw new Error('indisponivel'); } };
   const servico = criarNotificacaoService({ notificacoes, telegram });

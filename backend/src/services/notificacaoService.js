@@ -15,12 +15,21 @@ function criarNotificacaoService({ notificacoes, telegram }) {
     try {
       const pendentes = await notificacoes.listarPendentes();
       for (const item of pendentes) {
+        const cliente = item.atendimento?.veiculo?.cliente;
+        const chatId = cliente?.telegramVinculo?.chatId;
+        if (!chatId) {
+          // Aguardando o cliente abrir /start. Nao consumir tentativas.
+          await notificacoes.adiarSemVinculo(item);
+          continue;
+        }
         const placa = item.atendimento?.veiculo?.placa || 'nao informada';
         const tipo = item.atendimento?.servico?.nome || 'lavagem';
-        const mensagem = 'WashFlow - Aviso de atendimento\nVeiculo ' + placa +
-          ' finalizado. Servico: ' + tipo + '. Pronto para retirada.';
+        const nome = cliente?.nome || 'Cliente';
+        const mensagem = 'WashFlow - Seu carro esta pronto!\nOla, ' + nome +
+          '! O veiculo ' + placa + ' concluiu o servico ' + tipo +
+          '. Voce ja pode retira-lo.';
         try {
-          await telegram.enviar(mensagem);
+          await telegram.enviar(mensagem, chatId);
           await notificacoes.marcarEnviado(item);
           enviados += 1;
         } catch (erro) {

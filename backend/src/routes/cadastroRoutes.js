@@ -13,7 +13,7 @@ const {
   validarCliente, validarVeiculo, validarServico,
 } = require('../validators/cadastroValidators');
 
-function criarCadastroRoutes({ cadastroController, autenticar }) {
+function criarCadastroRoutes({ cadastroController, telegramVinculoController, autenticar }) {
   const router = express.Router();
 
   router.use(autenticar);
@@ -25,6 +25,9 @@ function criarCadastroRoutes({ cadastroController, autenticar }) {
     validarCliente,
     asyncHandler(cadastroController.criarCliente)
   );
+
+  router.get('/clientes/:id/telegram', asyncHandler(telegramVinculoController.status));
+  router.post('/clientes/:id/telegram/vincular', asyncHandler(telegramVinculoController.gerarLink));
 
   router.get('/veiculos', asyncHandler(cadastroController.listarVeiculos));
 
