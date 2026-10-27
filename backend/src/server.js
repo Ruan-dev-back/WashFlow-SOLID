@@ -12,7 +12,10 @@ const PORT = process.env.PORT || 3000;
 async function iniciar() {
   try {
     await sequelize.authenticate();
-    await sequelize.sync({ alter: true });
+    // Em SQLite, alter:true recria tabelas usando *_backup e pode falhar
+    // em reinicializacoes (UNIQUE constraint). No MVP, so cria tabelas ausentes.
+    // Mudancas em tabelas existentes devem ser feitas por migrations.
+    await sequelize.sync();
     await executarSeed({ passwordHasher });
     iniciarWorker({ notificacoes: services.notificacoes, telegramVinculo: services.telegramVinculo });
 
