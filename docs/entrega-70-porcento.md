@@ -4,7 +4,7 @@
 Lava-rápidos que registram chegadas em papel, planilhas ou memória perdem a ordem dos veículos, têm dificuldade para prever entregas e gastam tempo informando clientes. Nos horários de pico surgem atrasos, filas no balcão e baixa visibilidade para a gerência.
 
 ## Solução proposta
-O WashFlow é uma aplicação web de controle do pátio. A recepção cadastra cliente, placa, veículo, tipo de lavagem e entrada; o operador avança o atendimento de AGUARDANDO para EM_LAVAGEM, SECAGEM e FINALIZADO. O painel mostra a fila e a previsão aproximada. O gerente acompanha histórico, duração média real e notificações.
+O WashFlow é uma aplicação web de controle do pátio, com perfis de Administrador (GERENTE no código) e Funcionário. A recepção cadastra cliente, placa, veículo, tipo de lavagem e entrada; o operador avança o atendimento de AGUARDANDO para EM_LAVAGEM, SECAGEM e FINALIZADO. O painel mostra a fila e a previsão aproximada. O gerente acompanha histórico, duração média real e notificações.
 
 ## Arquitetura
 - Back-end **monolítico em camadas**, Node.js e Express, módulos internos coesos.
@@ -13,12 +13,18 @@ O WashFlow é uma aplicação web de controle do pátio. A recepção cadastra c
 - SOLID aplicado nas regras de negócio: **SRP** serviços por responsabilidade, **OCP** política de status injetada, **LSP/ISP** colaboradores substituíveis e contratos menores, **DIP** dependências injetadas em `backend/src/container.js`.
 - Telegram Bot API como **única integração externa de mensagens planejada para o MVP**. A integração agora associa cada cliente ao seu chat privado via link temporário de /start; o número de telefone permanece para cadastro, mas não endereça mensagens do Telegram.
 
+## Painel administrativo e limite do SaaS
+- Login `gerente / gerente123` acessa a area **Administracao → Tipos de lavagem**. A senha e de demonstracao e nao deve ser usada em producao.
+- O administrador configura nome, preco, duracao estimada e disponibilidade das lavagens. Desativar um tipo nao apaga seu historico; a recepcao enxerga apenas os tipos ativos.
+- O funcionario (`recepcao / recepcao123`) nao ve o menu administrativo e a API retorna **403** para tentativas de criacao/edicao/consulta administrativa.
+- **Arquitetura atual: backend monolitico em camadas + frontend SPA**, seguindo SOLID. Ainda NAO ha multi-tenancy, organizacoes independentes, assinatura, pagamento, isolamento de dados por lava-rapido ou autosservico de cadastro de empresas. Por isso nao afirmar que ja e um SaaS multiempresa completo.
+
 ## Critério objetivo da meta
 | Requisito | Estado nesta branch |
 | --- | --- |
 | RF01 Login e perfis | Implementado |
 | RF02 Clientes e veículos | Implementado |
-| RF03 Serviços | Implementado |
+| RF03 Serviços | Implementado: painel de Administracao com cadastro, edicao, ativacao/desativacao, duracao e preco; restrito ao GERENTE |
 | RF04 Entrada no pátio | Implementado |
 | RF05 Fila e status | Implementado |
 | RF06 Estimativa de espera | Implementado |

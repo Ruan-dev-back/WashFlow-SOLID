@@ -10,7 +10,7 @@ const asyncHandler = require('../middlewares/asyncHandler');
 const { autorizar } = require('../middlewares/auth');
 const { PERFIS } = require('../config/constants');
 const {
-  validarCliente, validarVeiculo, validarServico,
+  validarCliente, validarVeiculo, validarServico, validarAtualizacaoServico,
 } = require('../validators/cadastroValidators');
 
 function criarCadastroRoutes({ cadastroController, telegramVinculoController, autenticar }) {
@@ -38,12 +38,21 @@ function criarCadastroRoutes({ cadastroController, telegramVinculoController, au
   );
 
   router.get('/servicos', asyncHandler(cadastroController.listarServicos));
+  router.get('/servicos/admin',
+    autorizar(PERFIS.GERENTE),
+    asyncHandler(cadastroController.listarTodosServicos)
+  );
 
   router.post(
     '/servicos',
     autorizar(PERFIS.GERENTE),
     validarServico,
     asyncHandler(cadastroController.criarServico)
+  );
+  router.patch('/servicos/:id',
+    autorizar(PERFIS.GERENTE),
+    validarAtualizacaoServico,
+    asyncHandler(cadastroController.atualizarServico)
   );
 
   return router;

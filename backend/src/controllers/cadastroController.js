@@ -14,6 +14,9 @@ function criarCadastroController({ clienteService, veiculoService, servicoServic
     criarVeiculo: async (req, res) =>
       criado(res, await veiculoService.criarVeiculo(req.body), 'Veiculo cadastrado.'),
     listarServicos: async (req, res) => ok(res, await servicoService.listarServicos()),
+    listarTodosServicos: async (req, res) => ok(res, await servicoService.listarTodosServicos()),
+    atualizarServico: async (req, res) =>
+      ok(res, await servicoService.atualizarServico(req.params.id, req.body)),
     criarServico: async (req, res) =>
       criado(res, await servicoService.criarServico(req.body), 'Servico cadastrado.'),
   };

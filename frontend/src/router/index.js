@@ -33,6 +33,12 @@ const routes = [
     component: () => import('../views/RelatoriosView.vue'),
     meta: { exigeAutenticacao: true, exigeGerente: true },
   },
+  {
+    path: '/admin/servicos',
+    name: 'admin-servicos',
+    component: () => import('../views/AdminServicosView.vue'),
+    meta: { exigeAutenticacao: true, exigeGerente: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: { name: 'fila' } },
 ];
 
@@ -53,7 +59,7 @@ router.beforeEach((to) => {
   }
   // Quem ja entrou nao precisa ver a tela de login de novo.
   if (to.name === 'login' && autenticado) {
-    return { name: 'fila' };
+    return { name: obterUsuario()?.perfil === 'GERENTE' ? 'admin-servicos' : 'fila' };
   }
 
   return true;

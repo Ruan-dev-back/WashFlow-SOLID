@@ -53,3 +53,16 @@ export async function gerarLinkTelegram(clienteId) {
   const { dados } = await api.post('/clientes/' + encodeURIComponent(clienteId) + '/telegram/vincular', {});
   return dados;
 }
+
+export async function listarTodosServicos() {
+  const { dados } = await api.get('/servicos/admin');
+  return dados;
+}
+export async function criarTipoLavagem(dadosServico) {
+  const { dados } = await api.post('/servicos', dadosServico);
+  return dados;
+}
+export async function atualizarTipoLavagem(id, alteracoes) {
+  const { dados } = await api.patch('/servicos/' + encodeURIComponent(id), alteracoes);
+  return dados;
+}
