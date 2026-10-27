@@ -1,9 +1,11 @@
 flowchart LR
-    Cliente[Cliente]
-    Atendente[Funcionario ou recepcionista]
-    Gerente[Gerente]
-    WashFlow[WashFlow]
-
-    Cliente -->|Informa dados do veiculo e recebe previsao| Atendente
-    Atendente -->|Registra entrada e opera a fila| WashFlow
-    Gerente -->|Consulta a operacao e cadastra servicos| WashFlow
+    Cliente["Cliente do lava-rapido"]
+    Atendente["Funcionario / Recepcionista"]
+    Gerente["Gerente"]
+    WashFlow["WashFlow - sistema monolitico"]
+    Telegram["Telegram Bot API - externo"]
+    Cliente -->|"Autoriza vinculo via /start"| Telegram
+    Atendente -->|"Cadastra cliente, carro e opera fila"| WashFlow
+    Gerente -->|"Consulta relatorios e atendimentos"| WashFlow
+    WashFlow -->|"Avisa finalizacao ao chat individual autorizado"| Telegram
+    Telegram -->|"Entrega mensagem privada"| Cliente

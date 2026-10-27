@@ -1,5 +1,7 @@
 # WashFlow
 
+> **Entrega parcial 27/10/2026:** a branch `feat/entrega-70-telegram` acrescenta relatorios, notificacoes individuais por Telegram com vinculacao por /start, worker de retentativas e CI. Veja [guia de entrega](docs/entrega-70-porcento.md). O conteudo historico abaixo descreve o plano e o escopo anterior; Telegram usa o chat_id vinculado, nunca o telefone ou chat global.
+
 **Sistema de Controle de Fila para Lava Rápido**
 
 Projeto da disciplina de Projeto e Arquitetura de Software.

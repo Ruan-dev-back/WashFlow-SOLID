@@ -43,3 +43,13 @@ export async function listarNotificacoes() {
   const { dados } = await api.get('/notificacoes');
   return dados;
 }
+
+export async function consultarStatusTelegram(clienteId) {
+  const { dados } = await api.get('/clientes/' + encodeURIComponent(clienteId) + '/telegram');
+  return dados;
+}
+
+export async function gerarLinkTelegram(clienteId) {
+  const { dados } = await api.post('/clientes/' + encodeURIComponent(clienteId) + '/telegram/vincular', {});
+  return dados;
+}

@@ -1,14 +1,16 @@
 flowchart LR
-    Atendente[Funcionario ou recepcionista]
-    Gerente[Gerente]
-
-    subgraph WashFlow[Sistema WashFlow]
-        UI[Interface Web Vue.js]
-        API[Aplicacao WashFlow Node.js e Express]
-        DB[(Banco de dados PostgreSQL ou SQLite)]
-        UI -->|HTTP e JSON| API
-        API -->|Le e grava| DB
+    Funcionario["Recepcionista / Gerente"]
+    Cliente["Cliente"]
+    Telegram["Telegram Bot API externo"]
+    subgraph WF["WashFlow"]
+      UI["Interface Web Vue 3"]
+      API["Aplicacao monolitica Node.js / Express"]
+      DB[("Banco SQL - SQLite local / PostgreSQL destino")]
+      UI -->|"HTTP JSON"| API
+      API -->|"Sequelize"| DB
     end
-
-    Atendente -->|Login, recepcao e fila| UI
-    Gerente -->|Login e operacao| UI
+    Funcionario --> UI
+    API -->|"getUpdates: vincula cada chat ao cliente"| Telegram
+    Cliente -->|"/start com token temporario"| Telegram
+    API -->|"sendMessage(chat_id de cada cliente)"| Telegram
+    Telegram -->|"Aviso de carro pronto"| Cliente
