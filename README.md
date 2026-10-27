@@ -172,11 +172,79 @@ Representação estrutural das entidades e dos serviços. A [fonte Mermaid atual
 
 ### 4.2. Diagrama de Sequência da recepção
 
-O diagrama abaixo foi extraído do documento **João Gabriel.docx** e preserva a representação UML de interação produzida anteriormente pela equipe. Ele mostra Cliente → Atendente → consulta da placa → cadastro se necessário → escolha do serviço → criação da ordem → entrada na fila → informação de posição e tempo. No código atual, a "OrdemServico" do desenho corresponde a `Atendimento`, e a `Fila` é calculada a partir dos atendimentos em andamento, sem tabela ou objeto persistido próprio.
+O diagrama representa o **fluxo real do código** na branch `feat/entrega-70-telegram`: cadastro do atendimento, consulta/cadastro de cliente e veículo, seleção do serviço e cálculo da posição da fila. A equipe também produziu [o desenho UML original](docs/diagrama-sequencia-original.png), preservado para comparação.
 
-![Diagrama de sequência original da equipe](docs/diagrama-sequencia-original.png)
+**Fonte editável:** [`docs/diagrama-sequencia.mmd`](docs/diagrama-sequencia.mmd). O GitHub renderiza abaixo a fonte Mermaid diretamente no README:
 
-A [versão Mermaid do fluxo implementado](docs/diagrama-sequencia.mmd) detalha a requisição única de entrada. A interface coleta os dados e a escolha do serviço antes de enviar a requisição; o serviço consulta a placa, reutiliza veículo existente ou cadastra cliente e veículo quando necessário, cria o atendimento e devolve a posição com o tempo estimado até a conclusão. O envio de notificações não faz parte desse fluxo implementado.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cliente
+    actor Atendente
+    participant UI as RecepcaoView (Vue)
+    participant Rota as POST /api/atendimentos
+    participant Ctrl as AtendimentoController
+    participant Service as AtendimentoService
+    participant VR as VeiculoRepository
+    participant SR as ServicoRepository
+    participant CR as ClienteRepository
+    participant AR as AtendimentoRepository
+    participant FS as FilaService
+
+    Cliente->>Atendente: Informa dados do veiculo e telefone
+    Atendente->>UI: Preenche cadastro e escolhe a lavagem
+    UI->>Rota: POST /api/atendimentos (dados)
+    Note over Rota,Ctrl: Autenticacao JWT e validacao de entrada
+    Rota->>Ctrl: registrarEntrada(req)
+    Ctrl->>Service: registrarEntrada(dados, usuarioId)
+    Service->>Service: normalizarPlaca(placa)
+    Service->>VR: buscarPorPlaca(placaNormalizada)
+    VR-->>Service: Veiculo ou null
+    Service->>SR: buscarPorId(servicoId)
+    SR-->>Service: Tipo de lavagem ativo
+    Note over Service,SR: Servico inexistente ou inativo: erro 404
+
+    alt Veiculo existente
+        Service->>AR: buscarEmAndamentoPorVeiculo(veiculo.id)
+        AR-->>Service: Atendimento ativo ou null
+        Note over Service,AR: Se ja esta na fila: erro 409
+    else Veiculo novo
+        Service->>CR: buscarPorTelefone(telefone)
+        CR-->>Service: Cliente ou null
+        opt Cliente ainda nao cadastrado
+            Service->>CR: criar(nomeCliente, telefone)
+            CR-->>Service: Cliente criado
+        end
+        Service->>VR: criar(placa, modelo, cor, clienteId)
+        VR-->>Service: Veiculo criado
+    end
+
+    Service->>AR: criar(veiculoId, servicoId, usuarioId)
+    AR-->>Service: Atendimento criado (id)
+    Service->>AR: buscarPorId(id)
+    AR-->>Service: Atendimento com relacionamentos
+    Service->>FS: consultarFila()
+    FS->>AR: listarEmAndamento()
+    AR-->>FS: Atendimentos ativos em ordem de chegada
+    FS->>FS: calcularFila() e montar DTOs
+    Note over AR,FS: A fila e calculada, nao existe tabela Fila
+    FS-->>Service: Posicao e previsao por atendimento
+    Service-->>Ctrl: Atendimento + posicao + tempo estimado
+    Ctrl-->>UI: HTTP 201 - Entrada registrada
+    UI-->>Atendente: Exibe carro, fila e tempo estimado
+    Atendente-->>Cliente: Informa previsao
+```
+
+**Onde localizar a implementação:**
+
+- `backend/src/routes/atendimentoRoutes.js`: endpoint `POST /api/atendimentos`, autenticação e validação.
+- `backend/src/controllers/atendimentoController.js`: delega `registrarEntrada` ao serviço.
+- `backend/src/services/atendimentoService.js`: consulta/cria veículo e cliente, verifica o serviço, cria atendimento.
+- `backend/src/repositories/{veiculo,cliente,servico,atendimento}Repository.js`: persistência via Sequelize.
+- `backend/src/services/filaService.js` e `backend/src/domain/fila.js`: posição e previsão calculadas dos atendimentos em andamento.
+- `backend/src/container.js`: injeta as dependências dos serviços (DIP/SOLID).
+
+> **Diferença em relação ao desenho inicial:** a antiga `OrdemServico` corresponde ao modelo `Atendimento`; a `Fila` não é uma tabela, mas um cálculo feito pelo `FilaService`. O aviso do Telegram ocorre em outro fluxo, após o status `FINALIZADO`, portanto não aparece nesse diagrama de cadastro.
 
 ---
 
