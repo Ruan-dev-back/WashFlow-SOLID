@@ -4,7 +4,8 @@
 const app = require('./app');
 const { sequelize } = require('./models');
 const { executarSeed } = require('./config/seed');
-const { passwordHasher } = require('./container');
+const { passwordHasher, services } = require('./container');
+const { iniciarWorker } = require('./infrastructure/telegram/iniciarWorker');
 
 const PORT = process.env.PORT || 3000;
 
@@ -13,6 +14,7 @@ async function iniciar() {
     await sequelize.authenticate();
     await sequelize.sync({ alter: true });
     await executarSeed({ passwordHasher });
+    iniciarWorker(services.notificacoes);
 
     app.listen(PORT, () =>
       console.log(`API WashFlow ouvindo em http://localhost:${PORT}/api`)

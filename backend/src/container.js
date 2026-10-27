@@ -3,6 +3,12 @@ const clienteRepository = require('./repositories/clienteRepository');
 const veiculoRepository = require('./repositories/veiculoRepository');
 const servicoRepository = require('./repositories/servicoRepository');
 const atendimentoRepository = require('./repositories/atendimentoRepository');
+const notificacaoRepository = require('./repositories/notificacaoRepository');
+const { criarTelegramClient } = require('./infrastructure/telegram/telegramClient');
+const { criarNotificacaoService } = require('./services/notificacaoService');
+const { criarRelatorioService } = require('./services/relatorioService');
+const { criarRelatorioController } = require('./controllers/relatorioController');
+const { criarNotificacaoController } = require('./controllers/notificacaoController');
 const usuarioRepository = require('./repositories/usuarioRepository');
 
 const { criarBcryptPasswordHasher } = require('./infrastructure/security/bcryptPasswordHasher');
@@ -26,9 +32,19 @@ const tokenProvider = criarJwtTokenProvider({
   expiresIn: process.env.JWT_EXPIRES_IN || '8h',
 });
 
+const telegram = criarTelegramClient({
+  token: process.env.TELEGRAM_BOT_TOKEN,
+  chatId: process.env.TELEGRAM_CHAT_ID,
+});
+const notificacoes = criarNotificacaoService({
+  notificacoes: notificacaoRepository, telegram,
+});
+const relatorio = criarRelatorioService({ atendimentos: atendimentoRepository });
+
 const fila = criarFilaService({
   atendimentos: atendimentoRepository,
   fluxoStatus: fluxoStatusPadrao,
+  notificacoes,
 });
 
 const services = {
@@ -45,6 +61,8 @@ const services = {
     fila,
   }),
   fila,
+  notificacoes,
+  relatorio,
   cliente: criarClienteService({ clientes: clienteRepository }),
   veiculo: criarVeiculoService({ clientes: clienteRepository, veiculos: veiculoRepository }),
   servico: criarServicoService({ servicos: servicoRepository }),
@@ -54,6 +72,8 @@ const controllers = {
   auth: criarAuthController(services.auth),
   atendimento: criarAtendimentoController(services.atendimento),
   fila: criarFilaController(services.fila),
+  relatorio: criarRelatorioController(services.relatorio),
+  notificacao: criarNotificacaoController(services.notificacoes),
   cadastro: criarCadastroController({
     clienteService: services.cliente,
     veiculoService: services.veiculo,

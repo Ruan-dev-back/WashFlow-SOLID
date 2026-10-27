@@ -17,7 +17,7 @@ const { paraItemFilaDTO } = require('../dtos/filaDTO');
  * @param {{atendimentos: import('../ports/atendimentoRepositoryPort').AtendimentoFilaPort,
  * fluxoStatus: import('../ports/fluxoStatusPort').FluxoStatusPort,
  * relogio?: () => Date}} deps */
-function criarFilaService({ atendimentos, fluxoStatus, relogio = () => new Date() }) {
+function criarFilaService({ atendimentos, fluxoStatus, notificacoes, relogio = () => new Date() }) {
   async function consultarFila() {
     const emAndamento = await atendimentos.listarEmAndamento();
     return calcularFila(emAndamento, relogio()).map((item) =>
@@ -41,7 +41,17 @@ function criarFilaService({ atendimentos, fluxoStatus, relogio = () => new Date(
 
     // A futura notificacao sera assincrona e nao impedira a finalizacao.
     await atendimentos.salvar(atendimento);
-    return atendimentos.buscarPorId(id);
+    const atualizado = await atendimentos.buscarPorId(id);
+    if (transicao.status === 'FINALIZADO' && notificacoes) {
+      try {
+        // Persistir na fila de notificações, nunca aguardar HTTP do Telegram.
+        await notificacoes.enfileirarFinalizacao(atualizado);
+      } catch (erro) {
+        // Uma falha secundária não desfaz a finalização do carro.
+        console.error('Nao foi possivel enfileirar aviso do atendimento:', id, erro.message);
+      }
+    }
+    return atualizado;
   }
 
   return { consultarFila, avancarStatus };

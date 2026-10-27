@@ -5,6 +5,7 @@ const express = require('express');
 const { criarAuthRoutes } = require('./authRoutes');
 const { criarCadastroRoutes } = require('./cadastroRoutes');
 const { criarAtendimentoRoutes } = require('./atendimentoRoutes');
+const { criarGestaoRoutes } = require('./gestaoRoutes');
 
 function criarRoutes({ controllers, autenticar }) {
   const router = express.Router();
@@ -20,6 +21,7 @@ function criarRoutes({ controllers, autenticar }) {
     filaController: controllers.fila,
     autenticar,
   }));
+  router.use(criarGestaoRoutes({ controllers, autenticar }));
   return router;
 }
 

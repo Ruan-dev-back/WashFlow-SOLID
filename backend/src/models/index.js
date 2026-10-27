@@ -9,6 +9,7 @@ const Cliente = require('./Cliente');
 const Veiculo = require('./Veiculo');
 const Servico = require('./Servico');
 const Atendimento = require('./Atendimento');
+const Notificacao = require('./Notificacao');
 
 // Um cliente pode ter varios veiculos.
 Cliente.hasMany(Veiculo, { foreignKey: 'clienteId', as: 'veiculos' });
@@ -25,7 +26,11 @@ Atendimento.belongsTo(Servico, { foreignKey: 'servicoId', as: 'servico' });
 Usuario.hasMany(Atendimento, { foreignKey: 'usuarioId', as: 'atendimentos' });
 Atendimento.belongsTo(Usuario, { foreignKey: 'usuarioId', as: 'usuario' });
 
+Atendimento.hasOne(Notificacao, { foreignKey: 'atendimentoId', as: 'notificacao' });
+Notificacao.belongsTo(Atendimento, { foreignKey: 'atendimentoId', as: 'atendimento' });
+
 module.exports = {
+  Notificacao,
   sequelize,
   Usuario,
   Cliente,
