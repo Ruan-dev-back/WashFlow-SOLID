@@ -48,7 +48,7 @@ sequenceDiagram
     FS->>AR: listarEmAndamento()
     AR-->>FS: Atendimentos ativos em ordem de chegada
     FS->>FS: calcularFila() e montar DTOs
-    Note over FS,AR: A fila e calculada, nao existe tabela Fila
+    Note over AR,FS: A fila e calculada, nao existe tabela Fila
     FS-->>Service: Posicao e previsao por atendimento
     Service-->>Ctrl: Atendimento + posicao + tempo estimado
     Ctrl-->>UI: HTTP 201 - Entrada registrada
