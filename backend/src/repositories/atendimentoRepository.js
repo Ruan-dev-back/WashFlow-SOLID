@@ -33,12 +33,23 @@ const buscarEmAndamentoPorVeiculo = (veiculoId) =>
     where: { veiculoId, status: { [Op.in]: STATUS_EM_ANDAMENTO } },
   });
 
+const listarFinalizadosEntre = (inicio, fim) =>
+  Atendimento.findAll({
+    where: {
+      status: 'FINALIZADO',
+      horaFim: { [Op.gte]: inicio, [Op.lt]: fim },
+    },
+    include: INCLUDES,
+    order: [['horaFim', 'DESC']],
+  });
+
 const criar = (dados) => Atendimento.create(dados);
 
 const salvar = (atendimento) => atendimento.save();
 
 module.exports = {
   listarEmAndamento,
+  listarFinalizadosEntre,
   buscarPorId,
   buscarEmAndamentoPorVeiculo,
   criar,

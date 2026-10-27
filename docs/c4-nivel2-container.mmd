@@ -1,0 +1,16 @@
+flowchart LR
+    Funcionario["Recepcionista / Gerente"]
+    Cliente["Cliente"]
+    Telegram["Telegram Bot API externo"]
+    subgraph WF["WashFlow"]
+      UI["Interface Web Vue 3"]
+      API["Aplicacao monolitica Node.js / Express"]
+      DB[("Banco SQL - SQLite local / PostgreSQL destino")]
+      UI -->|"HTTP JSON"| API
+      API -->|"Sequelize"| DB
+    end
+    Funcionario --> UI
+    API -->|"getUpdates: vincula cada chat ao cliente"| Telegram
+    Cliente -->|"/start com token temporario"| Telegram
+    API -->|"sendMessage(chat_id de cada cliente)"| Telegram
+    Telegram -->|"Aviso de carro pronto"| Cliente

@@ -33,6 +33,8 @@ function encerrar() {
     <h1>WashFlow</h1>
     <RouterLink :to="{ name: 'recepcao' }" active-class="ativo">Recepcao</RouterLink>
     <RouterLink :to="{ name: 'fila' }" active-class="ativo">Fila</RouterLink>
+    <RouterLink v-if="usuario?.perfil === 'GERENTE'" :to="{ name: 'admin-servicos' }" active-class="ativo">Administracao</RouterLink>
+    <RouterLink v-if="usuario?.perfil === 'GERENTE'" :to="{ name: 'relatorios' }" active-class="ativo">Relatorios</RouterLink>
     <span style="font-size: 0.85rem">
       {{ usuario.nome }} ({{ usuario.perfil }})
     </span>

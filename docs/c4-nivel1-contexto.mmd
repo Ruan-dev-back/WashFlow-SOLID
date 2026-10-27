@@ -1,0 +1,11 @@
+flowchart LR
+    Cliente["Cliente do lava-rapido"]
+    Atendente["Funcionario / Recepcionista"]
+    Gerente["Gerente"]
+    WashFlow["WashFlow - sistema monolitico"]
+    Telegram["Telegram Bot API - externo"]
+    Cliente -->|"Autoriza vinculo via /start"| Telegram
+    Atendente -->|"Cadastra cliente, carro e opera fila"| WashFlow
+    Gerente -->|"Consulta relatorios e atendimentos"| WashFlow
+    WashFlow -->|"Avisa finalizacao ao chat individual autorizado"| Telegram
+    Telegram -->|"Entrega mensagem privada"| Cliente

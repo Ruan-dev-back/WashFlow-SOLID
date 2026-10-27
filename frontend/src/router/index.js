@@ -7,7 +7,7 @@
  * rota protegida -- o guard existe para experiencia do usuario.
  */
 import { createRouter, createWebHistory } from 'vue-router';
-import { obterToken } from '../services/api';
+import { obterToken, obterUsuario } from '../services/api';
 
 const routes = [
   {
@@ -27,6 +27,18 @@ const routes = [
     component: () => import('../views/FilaView.vue'),
     meta: { exigeAutenticacao: true },
   },
+  {
+    path: '/relatorios',
+    name: 'relatorios',
+    component: () => import('../views/RelatoriosView.vue'),
+    meta: { exigeAutenticacao: true, exigeGerente: true },
+  },
+  {
+    path: '/admin/servicos',
+    name: 'admin-servicos',
+    component: () => import('../views/AdminServicosView.vue'),
+    meta: { exigeAutenticacao: true, exigeGerente: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: { name: 'fila' } },
 ];
 
@@ -42,9 +54,12 @@ router.beforeEach((to) => {
     return { name: 'login' };
   }
 
+  if (to.meta.exigeGerente && obterUsuario()?.perfil !== 'GERENTE') {
+    return { name: 'fila' };
+  }
   // Quem ja entrou nao precisa ver a tela de login de novo.
   if (to.name === 'login' && autenticado) {
-    return { name: 'fila' };
+    return { name: obterUsuario()?.perfil === 'GERENTE' ? 'admin-servicos' : 'fila' };
   }
 
   return true;

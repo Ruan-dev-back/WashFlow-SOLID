@@ -1,0 +1,56 @@
+sequenceDiagram
+    autonumber
+    actor Cliente
+    actor Atendente
+    participant UI as RecepcaoView (Vue)
+    participant Rota as POST /api/atendimentos
+    participant Ctrl as AtendimentoController
+    participant Service as AtendimentoService
+    participant VR as VeiculoRepository
+    participant SR as ServicoRepository
+    participant CR as ClienteRepository
+    participant AR as AtendimentoRepository
+    participant FS as FilaService
+
+    Cliente->>Atendente: Informa dados do veiculo e telefone
+    Atendente->>UI: Preenche cadastro e escolhe a lavagem
+    UI->>Rota: POST /api/atendimentos (dados)
+    Note over Rota,Ctrl: Autenticacao JWT e validacao de entrada
+    Rota->>Ctrl: registrarEntrada(req)
+    Ctrl->>Service: registrarEntrada(dados, usuarioId)
+    Service->>Service: normalizarPlaca(placa)
+    Service->>VR: buscarPorPlaca(placaNormalizada)
+    VR-->>Service: Veiculo ou null
+    Service->>SR: buscarPorId(servicoId)
+    SR-->>Service: Tipo de lavagem ativo
+    Note over Service,SR: Servico inexistente ou inativo: erro 404
+
+    alt Veiculo existente
+        Service->>AR: buscarEmAndamentoPorVeiculo(veiculo.id)
+        AR-->>Service: Atendimento ativo ou null
+        Note over Service,AR: Se ja esta na fila: erro 409
+    else Veiculo novo
+        Service->>CR: buscarPorTelefone(telefone)
+        CR-->>Service: Cliente ou null
+        opt Cliente ainda nao cadastrado
+            Service->>CR: criar(nomeCliente, telefone)
+            CR-->>Service: Cliente criado
+        end
+        Service->>VR: criar(placa, modelo, cor, clienteId)
+        VR-->>Service: Veiculo criado
+    end
+
+    Service->>AR: criar(veiculoId, servicoId, usuarioId)
+    AR-->>Service: Atendimento criado (id)
+    Service->>AR: buscarPorId(id)
+    AR-->>Service: Atendimento com relacionamentos
+    Service->>FS: consultarFila()
+    FS->>AR: listarEmAndamento()
+    AR-->>FS: Atendimentos ativos em ordem de chegada
+    FS->>FS: calcularFila() e montar DTOs
+    Note over AR,FS: A fila e calculada, nao existe tabela Fila
+    FS-->>Service: Posicao e previsao por atendimento
+    Service-->>Ctrl: Atendimento + posicao + tempo estimado
+    Ctrl-->>UI: HTTP 201 - Entrada registrada
+    UI-->>Atendente: Exibe carro, fila e tempo estimado
+    Atendente-->>Cliente: Informa previsao

@@ -1,0 +1,162 @@
+classDiagram
+    class Usuario {
+      id
+      login
+      senhaHash
+      perfil
+    }
+    class Cliente {
+      id
+      nome
+      telefone
+    }
+    class Veiculo {
+      id
+      placa
+      modelo
+    }
+    class Servico {
+      id
+      nome
+      duracaoEstimadaMinutos
+    }
+    class Atendimento {
+      id
+      status
+      horaEntrada
+      horaInicio
+      horaFim
+    }
+
+    class AuthService {
+      +autenticar(login, senha)
+    }
+    class AtendimentoService {
+      +registrarEntrada(dados, usuarioId)
+    }
+    class FilaService {
+      +consultarFila()
+      +avancarStatus(id)
+    }
+    class ClienteService {
+      +listarClientes()
+      +criarCliente(dados)
+    }
+    class VeiculoService {
+      +listarVeiculos()
+      +criarVeiculo(dados)
+    }
+    class ServicoService {
+      +listarServicos()
+      +criarServico(dados)
+    }
+
+    class UsuarioRepositoryPort {
+      +buscarPorLogin(login)
+    }
+    class ClienteEntradaPort {
+      +buscarPorTelefone(telefone)
+      +criar(dados)
+    }
+    class ClienteCadastroPort {
+      +listar()
+      +buscarPorTelefone(telefone)
+      +criar(dados)
+    }
+    class ClienteConsultaPort {
+      +buscarPorId(id)
+    }
+    class VeiculoEntradaPort {
+      +buscarPorPlaca(placa)
+      +criar(dados)
+    }
+    class VeiculoCadastroPort {
+      +listar()
+      +buscarPorPlaca(placa)
+      +criar(dados)
+    }
+    class ServicoEntradaPort {
+      +buscarPorId(id)
+    }
+    class ServicoCadastroPort {
+      +listar()
+      +buscarPorNome(nome)
+      +criar(dados)
+    }
+    class AtendimentoEntradaPort {
+      +buscarPorId(id)
+      +buscarEmAndamentoPorVeiculo(id)
+      +criar(dados)
+    }
+    class AtendimentoFilaPort {
+      +listarEmAndamento()
+      +buscarPorId(id)
+      +salvar(atendimento)
+    }
+    class ComparadorSenhaPort {
+      +comparar(senha, hash)
+    }
+    class EmissorTokenPort {
+      +emitir(payload)
+    }
+    class VerificadorTokenPort {
+      +verificar(token)
+    }
+    class GeradorHashSenhaPort {
+      +gerarHash(senha)
+    }
+    class FluxoStatusPort {
+      +proximaTransicao(status)
+    }
+    class FilaConsultaPort {
+      +consultarFila()
+    }
+
+    class RepositoriesSequelize
+    class BcryptPasswordHasher
+    class JwtTokenProvider
+    class Container
+    class RegrasFila {
+      +calcularFila(atendimentos, agora)
+    }
+
+    Cliente "1" --> "0..*" Veiculo
+    Veiculo "1" --> "0..*" Atendimento
+    Servico "1" --> "0..*" Atendimento
+    Usuario "1" --> "0..*" Atendimento
+
+    AuthService ..> UsuarioRepositoryPort
+    AuthService ..> ComparadorSenhaPort
+    AuthService ..> EmissorTokenPort
+    AtendimentoService ..> ClienteEntradaPort
+    AtendimentoService ..> VeiculoEntradaPort
+    AtendimentoService ..> ServicoEntradaPort
+    AtendimentoService ..> AtendimentoEntradaPort
+    AtendimentoService ..> FilaConsultaPort
+    FilaService ..> AtendimentoFilaPort
+    FilaService ..> FluxoStatusPort
+    FilaService ..> RegrasFila
+    ClienteService ..> ClienteCadastroPort
+    VeiculoService ..> ClienteConsultaPort
+    VeiculoService ..> VeiculoCadastroPort
+    ServicoService ..> ServicoCadastroPort
+    RepositoriesSequelize ..> UsuarioRepositoryPort
+    RepositoriesSequelize ..> ClienteEntradaPort
+    RepositoriesSequelize ..> ClienteCadastroPort
+    RepositoriesSequelize ..> ClienteConsultaPort
+    RepositoriesSequelize ..> VeiculoEntradaPort
+    RepositoriesSequelize ..> VeiculoCadastroPort
+    RepositoriesSequelize ..> ServicoEntradaPort
+    RepositoriesSequelize ..> ServicoCadastroPort
+    RepositoriesSequelize ..> AtendimentoEntradaPort
+    RepositoriesSequelize ..> AtendimentoFilaPort
+    BcryptPasswordHasher ..> ComparadorSenhaPort
+    BcryptPasswordHasher ..> GeradorHashSenhaPort
+    JwtTokenProvider ..> EmissorTokenPort
+    JwtTokenProvider ..> VerificadorTokenPort
+    Container ..> AuthService
+    Container ..> AtendimentoService
+    Container ..> FilaService
+    Container ..> ClienteService
+    Container ..> VeiculoService
+    Container ..> ServicoService

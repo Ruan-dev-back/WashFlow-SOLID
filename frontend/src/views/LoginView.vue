@@ -22,8 +22,8 @@ async function submeter() {
   enviando.value = true;
 
   try {
-    await entrar(form.login, form.senha);
-    router.push({ name: 'fila' });
+    const usuario = await entrar(form.login, form.senha);
+    router.push({ name: usuario.perfil === 'GERENTE' ? 'admin-servicos' : 'fila' });
   } catch (e) {
     erro.value = e.message;
   } finally {

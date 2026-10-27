@@ -3,17 +3,19 @@
  *
  * O controller so traduz HTTP <-> servico. Nenhuma regra de negocio aqui.
  */
-const authService = require('../services/authService');
+function criarAuthController(authService) {
+  async function login(req, res) {
+    const { login: usuarioLogin, senha } = req.body;
+    const resultado = await authService.autenticar(usuarioLogin, senha);
 
-async function login(req, res) {
-  const { login: usuarioLogin, senha } = req.body;
-  const resultado = await authService.autenticar(usuarioLogin, senha);
+    return res.json({
+      sucesso: true,
+      mensagem: 'Autenticado com sucesso.',
+      dados: resultado,
+    });
+  }
 
-  return res.json({
-    sucesso: true,
-    mensagem: 'Autenticado com sucesso.',
-    dados: resultado,
-  });
+  return { login };
 }
 
-module.exports = { login };
+module.exports = { criarAuthController };

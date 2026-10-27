@@ -1,44 +1,25 @@
 /**
  * Camada de Apresentacao (MVC: Controller) -- cadastros de apoio.
  */
-const cadastroService = require('../services/cadastroService');
-
 const ok = (res, dados) => res.json({ sucesso: true, dados });
 const criado = (res, dados, mensagem) =>
   res.status(201).json({ sucesso: true, mensagem, dados });
 
-async function listarClientes(req, res) {
-  return ok(res, await cadastroService.listarClientes());
+function criarCadastroController({ clienteService, veiculoService, servicoService }) {
+  return {
+    listarClientes: async (req, res) => ok(res, await clienteService.listarClientes()),
+    criarCliente: async (req, res) =>
+      criado(res, await clienteService.criarCliente(req.body), 'Cliente cadastrado.'),
+    listarVeiculos: async (req, res) => ok(res, await veiculoService.listarVeiculos()),
+    criarVeiculo: async (req, res) =>
+      criado(res, await veiculoService.criarVeiculo(req.body), 'Veiculo cadastrado.'),
+    listarServicos: async (req, res) => ok(res, await servicoService.listarServicos()),
+    listarTodosServicos: async (req, res) => ok(res, await servicoService.listarTodosServicos()),
+    atualizarServico: async (req, res) =>
+      ok(res, await servicoService.atualizarServico(req.params.id, req.body)),
+    criarServico: async (req, res) =>
+      criado(res, await servicoService.criarServico(req.body), 'Servico cadastrado.'),
+  };
 }
 
-async function criarCliente(req, res) {
-  const cliente = await cadastroService.criarCliente(req.body);
-  return criado(res, cliente, 'Cliente cadastrado.');
-}
-
-async function listarVeiculos(req, res) {
-  return ok(res, await cadastroService.listarVeiculos());
-}
-
-async function criarVeiculo(req, res) {
-  const veiculo = await cadastroService.criarVeiculo(req.body);
-  return criado(res, veiculo, 'Veiculo cadastrado.');
-}
-
-async function listarServicos(req, res) {
-  return ok(res, await cadastroService.listarServicos());
-}
-
-async function criarServico(req, res) {
-  const servico = await cadastroService.criarServico(req.body);
-  return criado(res, servico, 'Servico cadastrado.');
-}
-
-module.exports = {
-  listarClientes,
-  criarCliente,
-  listarVeiculos,
-  criarVeiculo,
-  listarServicos,
-  criarServico,
-};
+module.exports = { criarCadastroController };
